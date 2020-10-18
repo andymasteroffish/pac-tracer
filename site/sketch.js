@@ -1,56 +1,16 @@
 //https://www.gamasutra.com/view/feature/3938/the_pacman_dossier.php?print=1
 
-const DIR_UP = 0
-const DIR_RIGHT = 1
-const DIR_DOWN = 2
-const DIR_LEFT = 3
-const NUM_DIRS = 4
+
 
 const tile_size = 20;
 
-let advance_time = true;
+let advance_time = false;
+let player_control = false;
 
 let num_cols = 28;
 let num_rows = 31;
-let raw_map = [
-	[0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0],
-	[0, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 0, 0,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 0],
-	[0, 1, 0, 0, 0,  0, 1, 0, 0, 0,  0, 0, 1, 0, 0,  1, 0, 0, 0, 0,  0, 1, 0, 0, 0,  0, 1, 0],
-	[0, 1, 0, 0, 0,  0, 1, 0, 0, 0,  0, 0, 1, 0, 0,  1, 0, 0, 0, 0,  0, 1, 0, 0, 0,  0, 1, 0],
-	[0, 1, 0, 0, 0,  0, 1, 0, 0, 0,  0, 0, 1, 0, 0,  1, 0, 0, 0, 0,  0, 1, 0, 0, 0,  0, 1, 0],
 
-	[0, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 0],
-	[0, 1, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 1, 0],
-	[0, 1, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 1, 0],
-	[0, 1, 1, 1, 1,  1, 1, 0, 0, 1,  1, 1, 1, 0, 0,  1, 1, 1, 1, 0,  0, 1, 1, 1, 1,  1, 1, 0],
-	[0, 0, 0, 0, 0,  0, 1, 0, 0, 0,  0, 0, 1, 0, 0,  1, 0, 0, 0, 0,  0, 1, 0, 0, 0,  0, 0, 0],
-
-	[0, 0, 0, 0, 0,  0, 1, 0, 0, 0,  0, 0, 1, 0, 0,  1, 0, 0, 0, 0,  0, 1, 0, 0, 0,  0, 0, 0],
-	[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
-	[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
-	[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
-	[1, 1, 1, 1, 1,  1, 1, 1, 1, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1],
-
-	[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
-	[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
-	[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
-	[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
-	[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
-
-	[0, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 0, 0,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 0],
-	[0, 1, 0, 0, 0,  0, 1, 0, 0, 0,  0, 0, 1, 0, 0,  1, 0, 0, 0, 0,  0, 1, 0, 0, 0,  0, 1, 0],
-	[0, 1, 0, 0, 0,  0, 1, 0, 0, 0,  0, 0, 1, 0, 0,  1, 0, 0, 0, 0,  0, 1, 0, 0, 0,  0, 1, 0],
-	[0, 1, 1, 1, 0,  0, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 0, 0, 1,  1, 1, 0],
-	[0, 0, 0, 1, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 1,  0, 0, 0],
-
-	[0, 0, 0, 1, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 1,  0, 0, 0],
-	[0, 1, 1, 1, 1,  1, 1, 0, 0, 1,  1, 1, 1, 0, 0,  1, 1, 1, 1, 0,  0, 1, 1, 1, 1,  1, 1, 0],
-	[0, 1, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 1, 0, 0,  1, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 1, 0],
-	[0, 1, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 1, 0, 0,  1, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 1, 0],
-	[0, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 0],
-
-	[0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0],	
-]
+let raw_map;
 let grid = []
 
 let view_offset_x = 20;
@@ -68,6 +28,8 @@ let turn_prc = 0;	//percentage until next turn
 function setup() {
 	createCanvas(window.innerWidth,window.innerHeight);
 
+	raw_map = make_raw_level()
+
 	//set tiles
 	grid = new Array(num_cols);
 	for (let i=0; i<num_cols; i++){
@@ -77,7 +39,6 @@ function setup() {
 	//tranfer it
 	for (let c=0; c<num_cols; c++){
 		for (let r=0; r<num_rows; r++){
-
 			grid[c][r] = make_tile(c,r)
 		}
 	}
@@ -85,51 +46,51 @@ function setup() {
 	//set actors
 	pacman = make_actor({
 		type:"pacman",
-		c:1,
-		r:1
+		c:6,
+		r:14
 	})
 	actors.push(pacman)
 
-	//ghosts
-	actors.push(
-		make_actor({
-			type:"blinky",
-			c:4,
-			r:0,
-			target_actor:pacman,
-			scatter_tile:{c:num_cols, r:-1}
-		})
-	)
+	// //ghosts
+	// actors.push(
+	// 	make_actor({
+	// 		type:"blinky",
+	// 		c:26,
+	// 		r:1,
+	// 		target_actor:pacman,
+	// 		scatter_tile:{c:num_cols, r:-1}
+	// 	})
+	// )
 
-	actors.push(
-		make_actor({
-			type:"pinky",
-			c:0,
-			r:4,
-			target_actor:pacman,
-			scatter_tile:{c:-1, r:-1}
-		})
-	)
+	// actors.push(
+	// 	make_actor({
+	// 		type:"pinky",
+	// 		c:1,
+	// 		r:1,
+	// 		target_actor:pacman,
+	// 		scatter_tile:{c:-1, r:-1}
+	// 	})
+	// )
 
-	let inky = make_actor({
-		type:"inky",
-		c:5,
-		r:4,
-		target_actor:pacman,
-		scatter_tile:{c:-1, r:num_rows}
-	})
-	inky.blinky = actors[1];	//this ghost is the only one that cares about another ghost
-	actors.push(inky)
+	// let inky = make_actor({
+	// 	type:"inky",
+	// 	c:26,
+	// 	r:29,
+	// 	target_actor:pacman,
+	// 	scatter_tile:{c:-1, r:num_rows}
+	// })
+	// inky.blinky = actors[1];	//this ghost is the only one that cares about another ghost
+	// actors.push(inky)
 
-	actors.push(
-		make_actor({
-			type:"clyde",
-			c:0,
-			r:4,
-			target_actor:pacman,
-			scatter_tile:{c:-1, r:num_rows}
-		})
-	)
+	// actors.push(
+	// 	make_actor({
+	// 		type:"clyde",
+	// 		c:1,
+	// 		r:29,
+	// 		target_actor:pacman,
+	// 		scatter_tile:{c:-1, r:num_rows}
+	// 	})
+	// )
 
 
 }
@@ -155,6 +116,11 @@ function draw() {
 			else					fill(100, 20, 110);
 			rect(c*tile_size, r*tile_size, tile_size, tile_size);
 
+			if (grid[c][r].has_pellet){
+				fill(0)
+				ellipse(c*tile_size+tile_size/2, r*tile_size+tile_size/2, 3, 3)
+			}
+
 		}
 	}
 
@@ -164,12 +130,17 @@ function draw() {
 	})
 
 	//testing
+	// fill(47, 245, 245)
+	// let test_pos = get_target_pos(actors[3])
+	// ellipse(test_pos.x+tile_size/2, test_pos.y+tile_size/2, 5)
 	fill(47, 245, 245)
-	let test_pos = get_target_pos(actors[3])
-	ellipse(test_pos.x, test_pos.y, 5)
-
+	let test_pos = get_target_pos(pacman)
+	ellipse(test_pos.x+tile_size/2, test_pos.y+tile_size/2, 5)
 
 	pop();
+
+	fill(0)
+	text("FPS: "+frameRate, 10,15)
 }
 
 function mousePressed(){
@@ -179,8 +150,8 @@ function mousePressed(){
 	for (let c=0; c<num_cols; c++){
 		for (let r=0; r<num_rows; r++){
 			if (m_x > c*tile_size && m_x < (c+1)*tile_size && m_y > r*tile_size && m_y < (r+1)*tile_size){
-				actors[0].target_pos = get_tile_pos(c,r)// target_tile = grid[c][r]
-				console.log(actors[0].target_pos)
+				//actors[0].target_pos = get_tile_pos(c,r)// target_tile = grid[c][r]
+				console.log("mouse tile: "+c+" , "+r)
 			}
 		}
 	}

@@ -34,8 +34,13 @@ function make_turn_end_decision(actor){
 	//prev tile becomes next tile
 	actor.prev_tile = actor.next_tile;
 
-	//pacman is keyboard control for now
+	//pacman eats
 	if (actor.type == "pacman"){
+		actor.prev_tile.has_pellet = false
+	}
+
+	//pacman is keyboard control for now
+	if (actor.type == "pacman" && player_control){
 		let next  = get_tile_in_dir(actor.prev_tile, actor.dir)
 		if (next != null){
 			if (next.open){
@@ -54,7 +59,7 @@ function make_turn_end_decision(actor){
 	let possible_dirs = []
 	
 	for (let d=0; d<NUM_DIRS; d++){
-		if (d != opposite_dir(actor.dir)){	
+		if (d != opposite_dir(actor.dir) || actor.type == "pacman"){	
 			let tile = get_tile_in_dir(actor.prev_tile, d)
 			if (tile != null){
 				if (tile.open){
@@ -63,6 +68,9 @@ function make_turn_end_decision(actor){
 			}
 		}
 	}
+
+	console.log("possible: ")
+	
 
 	if (possible_dirs.length == 0){
 		console.log("NO VALID DIRECTIONS! BAD!")
@@ -74,9 +82,11 @@ function make_turn_end_decision(actor){
 	possible_dirs.forEach( dir => {
 		let other_tile = get_tile_in_dir(actor.prev_tile, dir)
 		let distance = dist(other_tile.x, other_tile.y, target_pos.x, target_pos.y)
+		console.log("  "+dir+" has dist "+distance)
 		if (distance < shortest_dist){
 			shortest_dist = distance;
 			best_dir = dir
+			console.log("     that best")
 		}
 	})
 
@@ -146,6 +156,29 @@ function get_target_pos(actor){
 		}else{
 			return get_tile_pos(pacman_tile)
 		}
+	}
+
+	//pacman wants them pellets
+	if (actor.type == "pacman"){
+		
+		//find the next closes one
+		let close_dist = 9999;
+		let best_tile = {c:0,r:0}
+
+		for (let c=0; c<num_cols; c++){
+			for (let r=0; r<num_rows; r++){
+				if (grid[c][r].has_pellet){
+					let this_dist = dist(c,r, actor.prev_tile.c, actor.prev_tile.r)
+					if (this_dist < close_dist){
+						close_dist = this_dist
+						best_tile.c = c;
+						best_tile.r = r;
+					}
+				}
+			}
+		}
+
+		return get_tile_pos(best_tile)
 	}
 
 }
