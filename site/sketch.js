@@ -4,11 +4,12 @@
 
 const tile_size = 20;
 
-let advance_time = true;
+let advance_time = false;
 let player_control = false;
 
 let num_cols = 28;
 let num_rows = 31;
+let num_depth = 6;
 
 let raw_map;
 let grid = []
@@ -28,25 +29,31 @@ let turn_num = 0;
 let turn_prc = 0;	//percentage until next turn
 
 //visual modes
-let show_grid = false
-let show_trails = true
+let show_grid = true
+let show_trails = false
 let show_actors = false
 
 function setup() {
-	createCanvas(window.innerWidth,window.innerHeight);
+	createCanvas(window.innerWidth,window.innerHeight, WEBGL);
 
 	raw_map = make_raw_level()
+	//console.log(raw_map)
 
 	//set tiles
 	grid = new Array(num_cols);
 	for (let i=0; i<num_cols; i++){
 		grid[i] = new Array(num_rows);
+		for (let d=0; d<num_rows; d++){
+			grid[i][d] = new Array(num_depth)
+		}
 	}
 
 	//tranfer it
 	for (let c=0; c<num_cols; c++){
 		for (let r=0; r<num_rows; r++){
-			grid[c][r] = make_tile(c,r)
+			for (let d=0; d<num_depth; d++){
+				grid[c][r][d] = make_tile(c,r,d)
+			}
 		}
 	}
 
@@ -125,19 +132,39 @@ function draw() {
 	}
 
 	push();
-	translate(view_offset_x,view_offset_y);
+	//translate(view_offset_x,view_offset_y);
+	rotateY(mouseX*0.1)
+	rotateX(mouseY*0.01)
+	translate(-num_cols*tile_size*0.5, -num_rows*tile_size*0.5);
+	
 
 	//draw the map
 	if (show_grid){
 		for (let c=0; c<num_cols; c++){
 			for (let r=0; r<num_rows; r++){
-				if (grid[c][r].open)	noFill();
-				else					fill(100, 20, 110);
-				rect(c*tile_size, r*tile_size, tile_size, tile_size);
+				for (let d=0; d<num_depth; d++){
 
-				if (grid[c][r].has_pellet){
-					fill(0)
-					ellipse(c*tile_size+tile_size/2, r*tile_size+tile_size/2, 3, 3)
+					let tile = grid[c][r][d]
+					//console.log(tile)
+
+					// if (grid[c][r].open)	noFill();
+					// else					fill(100, 20, 110);
+
+					if (tile.open){
+						fill(134, 41, 140)
+						noStroke()
+						push()
+						translate(tile.x, tile.y, tile.z)
+						sphere(tile_size*0.25)
+						pop()
+					}
+					//rect(c*tile_size, r*tile_size, tile_size, tile_size);
+
+					if (tile.has_pellet){
+						fill(0)
+						//ellipse(c*tile_size+tile_size/2, r*tile_size+tile_size/2, 3, 3)
+						
+					}
 				}
 
 			}
@@ -160,22 +187,22 @@ function draw() {
 
 	pop();
 
-	fill(0)
-	text("FPS: "+frameRate(), 10,15)
+	//fill(0)
+	//text("FPS: "+frameRate(), 10,15)
 }
 
 function mousePressed(){
-	let m_x = mouseX - view_offset_x
-	let m_y = mouseY - view_offset_y
+	// let m_x = mouseX - view_offset_x
+	// let m_y = mouseY - view_offset_y
 
-	for (let c=0; c<num_cols; c++){
-		for (let r=0; r<num_rows; r++){
-			if (m_x > c*tile_size && m_x < (c+1)*tile_size && m_y > r*tile_size && m_y < (r+1)*tile_size){
-				//actors[0].target_pos = get_tile_pos(c,r)// target_tile = grid[c][r]
-				console.log("mouse tile: "+c+" , "+r)
-			}
-		}
-	}
+	// for (let c=0; c<num_cols; c++){
+	// 	for (let r=0; r<num_rows; r++){
+	// 		if (m_x > c*tile_size && m_x < (c+1)*tile_size && m_y > r*tile_size && m_y < (r+1)*tile_size){
+	// 			//actors[0].target_pos = get_tile_pos(c,r)// target_tile = grid[c][r]
+	// 			console.log("mouse tile: "+c+" , "+r)
+	// 		}
+	// 	}
+	// }
 }
 
 function keyPressed(){
