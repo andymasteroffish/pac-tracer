@@ -29,8 +29,8 @@ function get_tile_in_dir(tile, dir){
 }
 
 function dir_vec(dir){
-	if (dir == DIR_UP)		return {x:0,y:-1}
-	if (dir == DIR_RIGHT)	return {x:1,y:0}
+	if (dir == DIR_UP)			return {x:0,y:-1}
+	if (dir == DIR_RIGHT)		return {x:1,y:0}
 	if (dir == DIR_DOWN)		return {x:0,y:1}
 	if (dir == DIR_LEFT)		return {x:-1,y:0}
 	console.log("you messed up")
@@ -47,15 +47,15 @@ function get_tile_pos(a,b){
 
 function get_tile_pos_coords(c,r){
 	return {
-		x : c * tile_size,
-		y : r * tile_size
+		x : c * tile_size + tile_size/2,
+		y : r * tile_size + tile_size/2
 	}
 }
 
 function get_tile_pos_tile(tile){
 	return {
-		x : tile.c * tile_size,
-		y : tile.r * tile_size
+		x : tile.c * tile_size + tile_size/2,
+		y : tile.r * tile_size + tile_size/2
 	}
 }
 
@@ -80,7 +80,7 @@ function make_raw_level(){
 		[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
 		[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
 		[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
-		[1, 1, 1, 1, 1,  0, 1, 1, 1, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 1,  1, 1, 0, 1, 1,  1, 1, 1],
+		[0, 0, 0, 0, 0,  0, 1, 1, 1, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 1,  1, 1, 0, 0, 0,  0, 0, 0],
 
 		[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
 		[0, 0, 0, 0, 0,  0, 1, 0, 0, 1,  0, 0, 0, 0, 0,  0, 0, 0, 1, 0,  0, 1, 0, 0, 0,  0, 0, 0],
