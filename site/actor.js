@@ -1,12 +1,12 @@
 
 
-function make_actor({type, c,r, col, target_actor, scatter_tile}){
+function make_actor({type, c,r,d, col, target_actor, scatter_tile}){
 
 	let actor = {
 		type:type,
 		dir:1,
-		cur_tile: grid[c][r],
-		next_tile: grid[c][r],
+		cur_tile: grid[c][r][d],
+		next_tile: grid[c][r][d],
 		target_actor : target_actor,
 		scatter_tile : scatter_tile,
 		col: col,
@@ -24,11 +24,39 @@ function draw_actor(actor, turn_prc){
 
 	let x = (1.0-turn_prc) * cur_tile.x + turn_prc * next_tile.x
 	let y = (1.0-turn_prc) * cur_tile.y + turn_prc * next_tile.y
+	let z = (1.0-turn_prc) * cur_tile.z + turn_prc * next_tile.z
+
+	let offset_dist = 6;
+	if (actor.type == "pacman")	offset_dist *= 0
+	if (actor.type == "blinky")	offset_dist *= 1
+	if (actor.type == "pinky")	offset_dist *= 2
+	if (actor.type == "clyde")	offset_dist *= -1
+	if (actor.type == "inky")	offset_dist *= -2
+
+	fill(actor.col)
+	stroke(actor.col)
 
 	if (show_actors){
-		stroke(0)
-		strokeWeight(1)
-		ellipse(x, y, tile_size*0.4, tile_size*0.4)
+		push()
+		noFill()
+		translate(x,y,z)
+		sphere(tile_size*0.4)
+
+		pop()
+
+		// stroke(0)
+		// strokeWeight(1)
+		// ellipse(x, y, tile_size*0.4, tile_size*0.4)
+
+		//testing
+		let test_pos = get_tile_pos_tile(get_target_tile(actor))
+		noStroke()
+		push()
+		let test_offset = offset_dist * 0.2
+		translate(test_pos.x+test_offset, test_pos.y+test_offset, test_pos.z+test_offset)
+		box(tile_size*0.2,tile_size,tile_size*0.2)
+		box(tile_size,tile_size*0.2,tile_size*0.2)
+		pop()
 	}
 
 	//trail
@@ -36,31 +64,33 @@ function draw_actor(actor, turn_prc){
 		strokeWeight(5)
 		stroke(actor.col)
 
-		let offset_dist = 6;
-		if (actor.type == "pacman")	offset_dist *= 0
-		if (actor.type == "blinky")	offset_dist *= 1
-		if (actor.type == "pinky")	offset_dist *= 2
-		if (actor.type == "clyde")	offset_dist *= -1
-		if (actor.type == "inky")	offset_dist *= -2
-
-		let trail_start = Math.max(0, actor.trail_tiles.length-40)
+		let trail_start = Math.max(0, actor.trail_tiles.length-trail_length)
 		for(let i=trail_start; i<actor.trail_tiles.length-1; i++){
 
 			let x1 = actor.trail_tiles[i].x+offset_dist
 			let y1 = actor.trail_tiles[i].y+offset_dist
+			let z1 = actor.trail_tiles[i].z+offset_dist
 
 			let x2 = actor.trail_tiles[i+1].x+offset_dist
 			let y2 = actor.trail_tiles[i+1].y+offset_dist
+			let z2 = actor.trail_tiles[i+1].z+offset_dist
 
 			if (i==actor.trail_tiles.length-2){
 				x2 = (1.0-turn_prc) * x1 + turn_prc * x2
 				y2 = (1.0-turn_prc) * y1 + turn_prc * y2
+				z2 = (1.0-turn_prc) * z1 + turn_prc * z2
 			}		
 
-			line(x1, y1, x2, y2)
+			line(x1, y1, z1, x2, y2, z2)
+			// beginShape(LINES);
+		 //    vertex(x1, y1, z1);
+		 //    vertex(x2, y2, z2);
+		 //    endShape();
 		}
 
 	}
+
+	
 
 }
 
@@ -76,7 +106,7 @@ function make_turn_end_decision(actor){
 		actor.cur_tile.has_pellet = false
 	}
 
-	//pacman can be keyboard controller
+	//pacman can be keyboard controlled
 	if (actor.type == "pacman" && player_control){
 		let next  = get_tile_in_dir(actor.cur_tile, actor.dir)
 		if (next != null){
@@ -143,11 +173,13 @@ function get_target_tile(actor){
 	if (actor.type == "pinky"){
 		let tile_pos = {
 			c : actor.target_actor.cur_tile.c,
-			r : actor.target_actor.cur_tile.r 
+			r : actor.target_actor.cur_tile.r,
+			d : actor.target_actor.cur_tile.d 
 		}
 		let push_dir = dir_vec(actor.target_actor.dir)
 		tile_pos.c += push_dir.x*4
 		tile_pos.r += push_dir.y*4
+		tile_pos.d += push_dir.z*4
 
 		return tile_pos
 	}
@@ -157,18 +189,21 @@ function get_target_tile(actor){
 		//get the tile in front of pacman
 		let leading_tile = {
 			c : actor.target_actor.cur_tile.c,
-			r : actor.target_actor.cur_tile.r 
+			r : actor.target_actor.cur_tile.r,
+			d : actor.target_actor.cur_tile.d
 		}
 		let push_dir = dir_vec(actor.target_actor.dir)
 		leading_tile.c += push_dir.x*2
 		leading_tile.r += push_dir.y*2
+		leading_tile.d += push_dir.z*2
 
 		//console.log("leading tile "+leading_tile.c+" , "+leading_tile.r)
 
 		//get delta from blink to that tile
 		let delta_tile = {
 			c: leading_tile.c - actor.blinky.cur_tile.c,
-			r: leading_tile.r - actor.blinky.cur_tile.r
+			r: leading_tile.r - actor.blinky.cur_tile.r,
+			d: leading_tile.d - actor.blinky.cur_tile.d
 		}
 
 		//console.log("delta tile "+delta_tile.c+" , "+delta_tile.r)
@@ -176,7 +211,8 @@ function get_target_tile(actor){
 		//add that delta to the leading pos
 		let final_tile = {
 			c: leading_tile.c + delta_tile.c,
-			r: leading_tile.r + delta_tile.r
+			r: leading_tile.r + delta_tile.r,
+			d: leading_tile.d + delta_tile.d
 		}
 
 		//console.log("final tile "+final_tile.c+" , "+final_tile.r)
@@ -187,7 +223,7 @@ function get_target_tile(actor){
 	//clyde goes for the player until he gets close
 	if (actor.type == "clyde"){
 		let pacman_tile = actor.target_actor.cur_tile
-		if(dist(actor.cur_tile.c,actor.cur_tile.r, pacman_tile.c, pacman_tile.r) < 8){
+		if(dist(actor.cur_tile.c,actor.cur_tile.r,actor.cur_tile.d, pacman_tile.c, pacman_tile.r,pacman_tile.d) < 8){
 			return actor.scatter_tile
 		}else{
 			return pacman_tile
@@ -205,13 +241,16 @@ function get_target_tile(actor){
 
 		for (let c=0; c<num_cols; c++){
 			for (let r=0; r<num_rows; r++){
-				if (grid[c][r].has_pellet){
-					game_over = false
-					let this_dist = dist(c,r, actor.cur_tile.c, actor.cur_tile.r)
-					if (this_dist < close_dist){
-						close_dist = this_dist
-						best_tile.c = c;
-						best_tile.r = r;
+				for (let d=0; d<num_depth; d++){
+					if (grid[c][r][d].has_pellet){
+						game_over = false
+						let this_dist = dist(c,r,d, actor.cur_tile.c, actor.cur_tile.r, actor.cur_tile.d)
+						if (this_dist < close_dist){
+							close_dist = this_dist
+							best_tile.c = c;
+							best_tile.r = r;
+							best_tile.d = d;
+						}
 					}
 				}
 			}

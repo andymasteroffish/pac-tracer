@@ -4,12 +4,14 @@
 
 const tile_size = 20;
 
-let advance_time = false;
+const trail_length = 80;
+
+let advance_time = true;
 let player_control = false;
 
 let num_cols = 28;
 let num_rows = 31;
-let num_depth = 6;
+let num_depth = 9;
 
 let raw_map;
 let grid = []
@@ -31,7 +33,7 @@ let turn_prc = 0;	//percentage until next turn
 //visual modes
 let show_grid = true
 let show_trails = false
-let show_actors = false
+let show_actors = true
 
 function setup() {
 	createCanvas(window.innerWidth,window.innerHeight, WEBGL);
@@ -60,8 +62,9 @@ function setup() {
 	//set actors
 	pacman = make_actor({
 		type:"pacman",
-		c:6,
-		r:14,
+		c:1,//6,
+		r:1,// 14,
+		d:0,
 		col : color(219, 213, 26)
 	})
 	actors.push(pacman)
@@ -72,9 +75,10 @@ function setup() {
 			type:"blinky",
 			c:26,
 			r:1,
+			d:2,
 			col : color(255, 20, 20),
 			target_actor:pacman,
-			scatter_tile:{c:num_cols, r:-1}
+			scatter_tile:{c:num_cols, r:-1, d:num_depth}
 		})
 	)
 
@@ -83,19 +87,21 @@ function setup() {
 			type:"pinky",
 			c:1,
 			r:1,
+			d:4,
 			col: color(242, 126, 205),
 			target_actor:pacman,
-			scatter_tile:{c:-1, r:-1}
+			scatter_tile:{c:-1, r:-1, d:num_depth}
 		})
 	)
 
 	let inky = make_actor({
 		type:"inky",
-		c:26,
-		r:29,
+		c:21,
+		r:14,
+		d:8,
 		col: color(47, 245, 245),
 		target_actor:pacman,
-		scatter_tile:{c:-1, r:num_rows}
+		scatter_tile:{c:-1, r:num_rows, d:num_depth}
 	})
 	inky.blinky = actors[1];	//this ghost is the only one that cares about another ghost
 	actors.push(inky)
@@ -103,11 +109,12 @@ function setup() {
 	actors.push(
 		make_actor({
 			type:"clyde",
-			c:1,
-			r:29,
+			c:6,
+			r:14,
+			d:8,
 			col: color(242, 174, 63),
 			target_actor:pacman,
-			scatter_tile:{c:-1, r:num_rows}
+			scatter_tile:{c:-1, r:16, d:num_depth-1}
 		})
 	)
 
@@ -117,11 +124,14 @@ function setup() {
 function draw() {
 	background(250)
 
+	//line(-400,0,400,0)
+    
+
 	if (!game_over){
 		//advance time
 		if (advance_time){
 			turn_prc += 0.1;
-			if (keyPressed && key == 'f'){
+			if (keyIsPressed && key == 'f'){
 				console.log("now")
 				turn_prc = 1
 			}
@@ -133,9 +143,10 @@ function draw() {
 
 	push();
 	//translate(view_offset_x,view_offset_y);
-	rotateY(mouseX*0.1)
-	rotateX(mouseY*0.01)
-	translate(-num_cols*tile_size*0.5, -num_rows*tile_size*0.5);
+	let rot_limit =  PI/2
+	rotateY( map(mouseX,0,width,-rot_limit, rot_limit))
+	rotateX( map(mouseY,0,height,-rot_limit, rot_limit))
+	translate(-num_cols*tile_size*0.5, -(num_rows/2)*tile_size*0.5);
 	
 
 	//draw the map
@@ -151,11 +162,17 @@ function draw() {
 					// else					fill(100, 20, 110);
 
 					if (tile.open){
-						fill(134, 41, 140)
+						let size = tile_size*0.1
+						if (tile.has_pellet){
+							fill(0)
+							size= tile_size*0.20
+						}else{
+							fill(134, 41, 140)
+						}
 						noStroke()
 						push()
 						translate(tile.x, tile.y, tile.z)
-						sphere(tile_size*0.25)
+						sphere(size)
 						pop()
 					}
 					//rect(c*tile_size, r*tile_size, tile_size, tile_size);
@@ -182,8 +199,14 @@ function draw() {
 	// ellipse(test_pos.x+tile_size/2, test_pos.y+tile_size/2, 5)
 	// stroke(244*0.75, 255*0.75, 25*0.75)
 	// noFill()
-	// let test_pos = get_target_tile(pacman)
-	// ellipse(test_pos.c*tile_size+tile_size/2, test_pos.r*tile_size+tile_size/2, 7)
+	
+	// let test_pos = get_tile_pos_tile(get_target_tile(pacman))
+	// push()
+	// translate(test_pos.x, test_pos.y, test_pos.z)
+	// noStroke()
+	// fill(pacman.col)
+	// sphere(tile_size*0.21)
+	// pop()
 
 	pop();
 
