@@ -61,10 +61,13 @@ function draw_actor(actor, turn_prc){
 
 	//trail
 	if (show_trails){
-		strokeWeight(5)
+		strokeWeight(1)
 		stroke(actor.col)
 
-		let trail_start = Math.max(0, actor.trail_tiles.length-trail_length)
+		let trail_start = Math.max(1, actor.trail_tiles.length-trail_length)
+
+		let pnts = []
+		let num_steps = 10
 		for(let i=trail_start; i<actor.trail_tiles.length-1; i++){
 
 			let x1 = actor.trail_tiles[i].x+offset_dist
@@ -74,19 +77,86 @@ function draw_actor(actor, turn_prc){
 			let x2 = actor.trail_tiles[i+1].x+offset_dist
 			let y2 = actor.trail_tiles[i+1].y+offset_dist
 			let z2 = actor.trail_tiles[i+1].z+offset_dist
+			
+			for (let s=0; s<=num_steps; s++){
+				let prc = s/num_steps
+				
+				let pnt = {
+					x : (1.0-prc) * x1 + prc * x2,
+					y : (1.0-prc) * y1 + prc * y2,
+					z : (1.0-prc) * z1 + prc * z2
+				}
 
-			if (i==actor.trail_tiles.length-2){
-				x2 = (1.0-turn_prc) * x1 + turn_prc * x2
-				y2 = (1.0-turn_prc) * y1 + turn_prc * y2
-				z2 = (1.0-turn_prc) * z1 + turn_prc * z2
-			}		
-
-			line(x1, y1, z1, x2, y2, z2)
-			// beginShape(LINES);
-		 //    vertex(x1, y1, z1);
-		 //    vertex(x2, y2, z2);
-		 //    endShape();
+				pnts.push(pnt)
+			}
 		}
+
+		//connect to current tile
+		for (let s=0; s<=num_steps; s++){
+			let prc = s/num_steps
+			if (prc <= turn_prc){
+				let pnt = {
+					x : (1.0-prc) * actor.cur_tile.x + prc * actor.next_tile.x +offset_dist,
+					y : (1.0-prc) * actor.cur_tile.y + prc * actor.next_tile.y +offset_dist,
+					z : (1.0-prc) * actor.cur_tile.z + prc * actor.next_tile.z +offset_dist
+				}
+				pnts.push(pnt)
+			}
+		}
+
+
+		let spacing = 30;
+		let start_pnt = Math.floor(num_steps*turn_prc)
+		if(actor.trail_tiles.length < trail_length)	start_pnt = 0
+		for (let i=start_pnt; i<pnts.length-spacing-1; i++){
+			let a = pnts[i]
+			let b = pnts[i+spacing]
+			line(a.x,a.y,a.z, b.x,b.y,b.z)
+		}
+
+
+		/*
+		for(let i=trail_start; i<actor.trail_tiles.length-1; i++){
+
+			let x0 = actor.trail_tiles[i-1].x+offset_dist
+			let y0 = actor.trail_tiles[i-1].y+offset_dist
+			let z0 = actor.trail_tiles[i-1].z+offset_dist
+
+			let x1 = actor.trail_tiles[i].x+offset_dist
+			let y1 = actor.trail_tiles[i].y+offset_dist
+			let z1 = actor.trail_tiles[i].z+offset_dist
+
+			let x2 = actor.trail_tiles[i+1].x+offset_dist
+			let y2 = actor.trail_tiles[i+1].y+offset_dist
+			let z2 = actor.trail_tiles[i+1].z+offset_dist
+
+
+			let num_steps = 10
+			for (let s=0; s<=num_steps; s++){
+				let prc = s/num_steps
+				let a_x = (1.0-prc) * x0 + prc * x1;
+				let a_y = (1.0-prc) * y0 + prc * y1;
+				let a_z = (1.0-prc) * z0 + prc * z1;
+
+				let b_x = (1.0-prc) * x1 + prc * x2;
+				let b_y = (1.0-prc) * y1 + prc * y2;
+				let b_z = (1.0-prc) * z1 + prc * z2;
+
+				line(a_x,a_y,a_z, b_x,b_y,b_z)
+			}
+
+
+
+			// if (i==actor.trail_tiles.length-2){
+			// 	x2 = (1.0-turn_prc) * x1 + turn_prc * x2
+			// 	y2 = (1.0-turn_prc) * y1 + turn_prc * y2
+			// 	z2 = (1.0-turn_prc) * z1 + turn_prc * z2
+			// }		
+
+			// line(x1, y1, z1, x2, y2, z2)
+
+		}
+		*/
 
 	}
 

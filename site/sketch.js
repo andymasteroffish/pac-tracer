@@ -4,7 +4,7 @@
 
 const tile_size = 20;
 
-const trail_length = 80;
+const trail_length = 150;
 
 let advance_time = true;
 let player_control = false;
