@@ -60,6 +60,7 @@ function draw_actor(actor, turn_prc){
 	}
 
 	//trail
+	//console.log(actor.col)
 	if (show_trails){
 		strokeWeight(1)
 		stroke(actor.col)
@@ -109,6 +110,8 @@ function draw_actor(actor, turn_prc){
 		let start_pnt = Math.floor(num_steps*turn_prc)
 		if(actor.trail_tiles.length < trail_length)	start_pnt = 0
 		for (let i=start_pnt; i<pnts.length-spacing-1; i++){
+
+			stroke(actor.col)
 			let a = pnts[i]
 			let b = pnts[i+spacing]
 			line(a.x,a.y,a.z, b.x,b.y,b.z)
@@ -217,7 +220,7 @@ function make_turn_end_decision(actor){
 	let shortest_dist = 999999
 	possible_dirs.forEach( dir => {
 		let other_tile = get_tile_in_dir(actor.cur_tile, dir)
-		let distance = dist(other_tile.c, other_tile.r, target_tile.c, target_tile.r)
+		let distance = dist(other_tile.c, other_tile.r, other_tile.d, target_tile.c, target_tile.r, target_tile.d)
 		//console.log("  "+dir+" has dist "+distance)
 		if (distance < shortest_dist){
 			shortest_dist = distance;

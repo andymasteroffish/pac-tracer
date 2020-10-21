@@ -4,13 +4,13 @@
 
 const tile_size = 20;
 
-const trail_length = 150;
+const trail_length = 30;
 
-let advance_time = true;
+let advance_time = false;
 let player_control = false;
 
 let num_cols = 28;
-let num_rows = 31;
+let num_rows = 21//31;
 let num_depth = 9;
 
 let raw_map;
@@ -34,11 +34,17 @@ let turn_prc = 0;	//percentage until next turn
 let show_grid = true
 let show_trails = false
 let show_actors = true
+let show_connections = false
+
+let cursor_tile = null
 
 function setup() {
 	createCanvas(window.innerWidth,window.innerHeight, WEBGL);
 
-	raw_map = make_raw_level()
+	//raw_map = make_raw_level()
+	raw_map = test_level_json()
+
+	//console.log("raw:")
 	//console.log(raw_map)
 
 	//set tiles
@@ -62,23 +68,23 @@ function setup() {
 	//set actors
 	pacman = make_actor({
 		type:"pacman",
-		c:1,//6,
-		r:1,// 14,
-		d:0,
+		c:14,//6,
+		r:11,// 14,
+		d:4,
 		col : color(219, 213, 26)
 	})
-	actors.push(pacman)
+	
 
 	//ghosts
 	actors.push(
 		make_actor({
 			type:"blinky",
-			c:26,
+			c:1,
 			r:1,
-			d:2,
+			d:0,
 			col : color(255, 20, 20),
 			target_actor:pacman,
-			scatter_tile:{c:num_cols, r:-1, d:num_depth}
+			scatter_tile:{c:0, r:0, d:-1}
 		})
 	)
 
@@ -86,39 +92,41 @@ function setup() {
 		make_actor({
 			type:"pinky",
 			c:1,
-			r:1,
-			d:4,
+			r:8,
+			d:8,
 			col: color(242, 126, 205),
 			target_actor:pacman,
-			scatter_tile:{c:-1, r:-1, d:num_depth}
+			scatter_tile:{c:0, r:8, d:9}
 		})
 	)
 
 	let inky = make_actor({
 		type:"inky",
-		c:21,
-		r:14,
+		c:26,
+		r:1,
 		d:8,
 		col: color(47, 245, 245),
 		target_actor:pacman,
-		scatter_tile:{c:-1, r:num_rows, d:num_depth}
+		scatter_tile:{c:num_cols, r:0, d:num_depth}
 	})
-	inky.blinky = actors[1];	//this ghost is the only one that cares about another ghost
+	inky.blinky = actors[0];	//this ghost is the only one that cares about another ghost
 	actors.push(inky)
 
 	actors.push(
 		make_actor({
 			type:"clyde",
-			c:6,
-			r:14,
-			d:8,
+			c:26,
+			r:8,
+			d:0,
 			col: color(242, 174, 63),
 			target_actor:pacman,
-			scatter_tile:{c:-1, r:16, d:num_depth-1}
+			scatter_tile:{c:num_rows, r:8, d:-1}
 		})
 	)
 
+	actors.push(pacman)
 
+	cursor_tile = grid[0][0][0]
 }
 
 function draw() {
@@ -146,7 +154,7 @@ function draw() {
 	let rot_limit =  PI/2
 	rotateY( map(mouseX,0,width,-rot_limit, rot_limit))
 	rotateX( map(mouseY,0,height,-rot_limit, rot_limit))
-	translate(-num_cols*tile_size*0.5, -(num_rows/2)*tile_size*0.5);
+	translate(-num_cols*tile_size*0.5, -num_rows*tile_size*0.5);
 	
 
 	//draw the map
@@ -156,11 +164,6 @@ function draw() {
 				for (let d=0; d<num_depth; d++){
 
 					let tile = grid[c][r][d]
-					//console.log(tile)
-
-					// if (grid[c][r].open)	noFill();
-					// else					fill(100, 20, 110);
-
 					if (tile.open){
 						let size = tile_size*0.1
 						if (tile.has_pellet){
@@ -169,19 +172,26 @@ function draw() {
 						}else{
 							fill(134, 41, 140)
 						}
+						if (show_connections)	size *= 0.2
 						noStroke()
 						push()
 						translate(tile.x, tile.y, tile.z)
 						sphere(size)
 						pop()
-					}
-					//rect(c*tile_size, r*tile_size, tile_size, tile_size);
 
-					if (tile.has_pellet){
-						fill(0)
-						//ellipse(c*tile_size+tile_size/2, r*tile_size+tile_size/2, 3, 3)
-						
+						if (show_connections){
+							for (let dir = 0; dir<NUM_DIRS; dir++){
+								let next = get_tile_in_dir(tile,dir)
+								if (next != null){
+									if (next.open){
+										stroke(0)
+										line(tile.x,tile.y,tile.z, next.x, next.y, next.z)
+									}
+								}
+							}
+						}
 					}
+					
 				}
 
 			}
@@ -208,6 +218,14 @@ function draw() {
 	// sphere(tile_size*0.21)
 	// pop()
 
+	//cursor for level debug
+	push()
+	translate(cursor_tile.x, cursor_tile.y, cursor_tile.z)
+	stroke(255,0,0)
+	noFill()
+	box(tile_size)
+	pop()
+
 	pop();
 
 	//fill(0)
@@ -229,20 +247,24 @@ function mousePressed(){
 }
 
 function keyPressed(){
-	if (key == ' '){
+	if (key == 'Enter'){
 		new_turn();
 	}
-	if (keyCode === LEFT_ARROW) {
-		pacman.dir = DIR_LEFT
-	}
-	if (keyCode === RIGHT_ARROW) {
-		pacman.dir = DIR_RIGHT
-	}
-	if (keyCode === UP_ARROW) {
-		pacman.dir = DIR_UP
-	}
-	if (keyCode === DOWN_ARROW) {
-		pacman.dir = DIR_DOWN
+	// if (keyCode === LEFT_ARROW) {
+	// 	pacman.dir = DIR_LEFT
+	// }
+	// if (keyCode === RIGHT_ARROW) {
+	// 	pacman.dir = DIR_RIGHT
+	// }
+	// if (keyCode === UP_ARROW) {
+	// 	pacman.dir = DIR_UP
+	// }
+	// if (keyCode === DOWN_ARROW) {
+	// 	pacman.dir = DIR_DOWN
+	// }
+
+	if (key=='0'){
+		advance_time = !advance_time
 	}
 
 	//view toggles
@@ -254,6 +276,48 @@ function keyPressed(){
 	}
 	if (key == '3'){
 		show_actors = !show_actors
+	}
+	if (key == '4'){
+		show_connections = !show_connections
+	}
+
+	//moving the cursor
+	if (key == 'w'){
+		let new_tile = get_tile_in_dir(cursor_tile, DIR_UP);
+		if (new_tile != null)	cursor_tile = new_tile
+		console.log("cursor: "+cursor_tile.c+" , "+cursor_tile.r+" , "+cursor_tile.d)
+	}
+	if (key == 's'){
+		let new_tile = get_tile_in_dir(cursor_tile, DIR_DOWN);
+		if (new_tile != null)	cursor_tile = new_tile
+		console.log("cursor: "+cursor_tile.c+" , "+cursor_tile.r+" , "+cursor_tile.d)
+	}
+	if (key == 'a'){
+		let new_tile = get_tile_in_dir(cursor_tile, DIR_LEFT);
+		if (new_tile != null)	cursor_tile = new_tile
+		console.log("cursor: "+cursor_tile.c+" , "+cursor_tile.r+" , "+cursor_tile.d)
+	}
+	if (key == 'd'){
+		let new_tile = get_tile_in_dir(cursor_tile, DIR_RIGHT);
+		if (new_tile != null)	cursor_tile = new_tile
+		console.log("cursor: "+cursor_tile.c+" , "+cursor_tile.r+" , "+cursor_tile.d)
+	}
+	if (key == 'e'){
+		let new_tile = get_tile_in_dir(cursor_tile, DIR_IN);
+		if (new_tile != null)	cursor_tile = new_tile
+		console.log("cursor: "+cursor_tile.c+" , "+cursor_tile.r+" , "+cursor_tile.d)
+	}
+	if (key == 'q'){
+		let new_tile = get_tile_in_dir(cursor_tile, DIR_OUT);
+		if (new_tile != null)	cursor_tile = new_tile
+		console.log("cursor: "+cursor_tile.c+" , "+cursor_tile.r+" , "+cursor_tile.d)
+	}
+
+	if (key == ' '){
+		cursor_tile.open = !cursor_tile.open
+	}
+	if (key == 'p'){
+		print_level()
 	}
 }
 
