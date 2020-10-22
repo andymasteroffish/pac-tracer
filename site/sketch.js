@@ -36,9 +36,9 @@ let game_time = 0;		//estimated in seconds
 let next_behavior_change_time = 7
 
 //visual modes
-let show_grid = true
-let show_trails = false
-let show_actors = true
+let show_grid = false
+let show_trails = true
+let show_actors = false
 let show_connections = false
 
 let cursor_tile = null

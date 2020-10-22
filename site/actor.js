@@ -1,4 +1,5 @@
-const trail_prc_spacing = 0.1
+const trail_prc_spacing = 0.2
+const trail_slot_spacing = 20;
 
 function make_actor({type, c,r,d, col, target_actor, scatter_tile}){
 
@@ -78,13 +79,51 @@ function draw_trail(actor){
 	stroke(actor.col)
 
 
-	let spacing = 30;
+	
 	let start_pnt = Math.max(0, actor.trail_pnts.length-trail_length)
-	for (let i=start_pnt; i<actor.trail_pnts.length-spacing-1; i++){
+	for (let i=start_pnt; i<actor.trail_pnts.length-trail_slot_spacing-1; i++){
 		stroke(actor.col)
 		let a = actor.trail_pnts[i]
-		let b = actor.trail_pnts[i+spacing]
-		line(a.x,a.y,a.z, b.x,b.y,b.z)
+		let b = actor.trail_pnts[i+trail_slot_spacing]
+
+		let matching_dirs = 0
+		if (a.x == b.x)	matching_dirs++
+		if (a.y == b.y)	matching_dirs++
+		if (a.z == b.z)	matching_dirs++
+
+		//on curves, just connect 'em
+		if (matching_dirs <= 1){
+			//strokeWeight(1)
+			line(a.x,a.y,a.z, b.x,b.y,b.z)
+		}
+		//on straight passages, do something else
+		else{
+
+			let new_pos = {
+				x:a.x,
+				y:a.y,
+				z:a.z
+			}
+
+			let angle = i*0.1
+			let dist = 10
+
+			if (a.x==b.x && a.y==b.y){
+				new_pos.x += Math.cos(angle) * dist
+				new_pos.y += Math.sin(angle) * dist
+			}
+			if (a.x==b.x && a.z==b.z){
+				new_pos.z += Math.cos(angle) * dist
+				new_pos.x += Math.sin(angle) * dist
+			}
+			if (a.y==b.y && a.z==b.z){
+				new_pos.y += Math.cos(angle) * dist
+				new_pos.z += Math.sin(angle) * dist
+			}
+
+			line(new_pos.x,new_pos.y,new_pos.z, b.x,b.y,b.z)
+
+		}
 	}
 }
 
@@ -115,7 +154,10 @@ function update_actor(actor, turn_prc_step){
 		end_actor_turn(actor)
 	}
 
-	//you could check if travel prc is still over 1 and call this function again recursively with a turn prc of 0
+	//if travel prc is still over 1 do it again
+	if (actor.travel_prc > 1){
+		update_actor(actor, 0)
+	}
 }
 
 function flip_direction(actor){
