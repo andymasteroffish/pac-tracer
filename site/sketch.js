@@ -6,18 +6,19 @@ const tile_size = 20;
 
 const trail_length = 30;
 
-let advance_time = false;
+let advance_time = true;
 let player_control = false;
 
 let num_cols = 28;
-let num_rows = 21//31;
+let num_rows = 31;
 let num_depth = 9;
 
-let raw_map;
+let raw_map, raw_map_old;
 let grid = []
 
 let view_offset_x = 20;
 let view_offset_y = 20;
+let view_zoom = 1;
 
 let game_over = false
 
@@ -41,7 +42,7 @@ let cursor_tile = null
 function setup() {
 	createCanvas(window.innerWidth,window.innerHeight, WEBGL);
 
-	//raw_map = make_raw_level()
+	raw_map_old = make_raw_level()
 	raw_map = test_level_json()
 
 	//console.log("raw:")
@@ -154,7 +155,9 @@ function draw() {
 	let rot_limit =  PI/2
 	rotateY( map(mouseX,0,width,-rot_limit, rot_limit))
 	rotateX( map(mouseY,0,height,-rot_limit, rot_limit))
+	scale(view_zoom, view_zoom, view_zoom)
 	translate(-num_cols*tile_size*0.5, -num_rows*tile_size*0.5);
+	
 	
 
 	//draw the map
@@ -172,7 +175,7 @@ function draw() {
 						}else{
 							fill(134, 41, 140)
 						}
-						if (show_connections)	size *= 0.2
+						if (show_connections)	size *= 0.4
 						noStroke()
 						push()
 						translate(tile.x, tile.y, tile.z)
@@ -321,12 +324,23 @@ function keyPressed(){
 	}
 }
 
+function mouseWheel(event) {
+  print(event.delta);
+  //move the square according to the vertical scroll amount
+  view_zoom += event.delta * 0.01;
+  
+  if (view_zoom < 0.1)	view_zoom = 0.1
+  	console.log(view_zoom)
+  //uncomment to block page scrolling
+  //return false;
+}
+
 function new_turn(){
 	turn_num++;
 	turn_prc = 0;
 
 	//have all actors make a decision
 	actors.forEach(actor => {
-		make_turn_end_decision(actor);
+		end_actor_turn(actor);
 	})
 }

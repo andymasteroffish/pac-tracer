@@ -5,13 +5,22 @@ function make_actor({type, c,r,d, col, target_actor, scatter_tile}){
 	let actor = {
 		type:type,
 		dir:1,
+		travel_prc: 0,
 		cur_tile: grid[c][r][d],
 		next_tile: grid[c][r][d],
 		target_actor : target_actor,
 		scatter_tile : scatter_tile,
 		col: col,
-		trail_tiles : []
+		trail_tiles : [],
+		trail_pnts : []
 	}
+
+	actor.offset_dist = 6;
+	if (actor.type == "pacman")	actor.offset_dist *= 0
+	if (actor.type == "blinky")	actor.offset_dist *= 1
+	if (actor.type == "pinky")	actor.offset_dist *= 2
+	if (actor.type == "clyde")	actor.offset_dist *= -1
+	if (actor.type == "inky")	actor.offset_dist *= -2
 
 	return actor
 }
@@ -26,12 +35,7 @@ function draw_actor(actor, turn_prc){
 	let y = (1.0-turn_prc) * cur_tile.y + turn_prc * next_tile.y
 	let z = (1.0-turn_prc) * cur_tile.z + turn_prc * next_tile.z
 
-	let offset_dist = 6;
-	if (actor.type == "pacman")	offset_dist *= 0
-	if (actor.type == "blinky")	offset_dist *= 1
-	if (actor.type == "pinky")	offset_dist *= 2
-	if (actor.type == "clyde")	offset_dist *= -1
-	if (actor.type == "inky")	offset_dist *= -2
+	
 
 	fill(actor.col)
 	stroke(actor.col)
@@ -52,7 +56,7 @@ function draw_actor(actor, turn_prc){
 		let test_pos = get_tile_pos_tile(get_target_tile(actor))
 		noStroke()
 		push()
-		let test_offset = offset_dist * 0.2
+		let test_offset = actor.offset_dist * 0.2
 		translate(test_pos.x+test_offset, test_pos.y+test_offset, test_pos.z+test_offset)
 		box(tile_size*0.2,tile_size,tile_size*0.2)
 		box(tile_size,tile_size*0.2,tile_size*0.2)
@@ -62,112 +66,75 @@ function draw_actor(actor, turn_prc){
 	//trail
 	//console.log(actor.col)
 	if (show_trails){
-		strokeWeight(1)
-		stroke(actor.col)
+		draw_trail(actor)
+	}
+}
 
-		let trail_start = Math.max(1, actor.trail_tiles.length-trail_length)
+function draw_trail(actor){
+	strokeWeight(1)
+	stroke(actor.col)
 
-		let pnts = []
-		let num_steps = 10
-		for(let i=trail_start; i<actor.trail_tiles.length-1; i++){
+	let trail_start = Math.max(1, actor.trail_tiles.length-trail_length)
 
-			let x1 = actor.trail_tiles[i].x+offset_dist
-			let y1 = actor.trail_tiles[i].y+offset_dist
-			let z1 = actor.trail_tiles[i].z+offset_dist
+	let pnts = []
+	let num_steps = 10
+	for(let i=trail_start; i<actor.trail_tiles.length-1; i++){
 
-			let x2 = actor.trail_tiles[i+1].x+offset_dist
-			let y2 = actor.trail_tiles[i+1].y+offset_dist
-			let z2 = actor.trail_tiles[i+1].z+offset_dist
-			
-			for (let s=0; s<=num_steps; s++){
-				let prc = s/num_steps
-				
-				let pnt = {
-					x : (1.0-prc) * x1 + prc * x2,
-					y : (1.0-prc) * y1 + prc * y2,
-					z : (1.0-prc) * z1 + prc * z2
-				}
+		let x1 = actor.trail_tiles[i].x+actor.offset_dist
+		let y1 = actor.trail_tiles[i].y+actor.offset_dist
+		let z1 = actor.trail_tiles[i].z+actor.offset_dist
 
-				pnts.push(pnt)
-			}
-		}
-
-		//connect to current tile
+		let x2 = actor.trail_tiles[i+1].x+actor.offset_dist
+		let y2 = actor.trail_tiles[i+1].y+actor.offset_dist
+		let z2 = actor.trail_tiles[i+1].z+actor.offset_dist
+		
 		for (let s=0; s<=num_steps; s++){
 			let prc = s/num_steps
-			if (prc <= turn_prc){
-				let pnt = {
-					x : (1.0-prc) * actor.cur_tile.x + prc * actor.next_tile.x +offset_dist,
-					y : (1.0-prc) * actor.cur_tile.y + prc * actor.next_tile.y +offset_dist,
-					z : (1.0-prc) * actor.cur_tile.z + prc * actor.next_tile.z +offset_dist
-				}
-				pnts.push(pnt)
+			
+			let pnt = {
+				x : (1.0-prc) * x1 + prc * x2,
+				y : (1.0-prc) * y1 + prc * y2,
+				z : (1.0-prc) * z1 + prc * z2
 			}
+
+			pnts.push(pnt)
 		}
+	}
+
+	//connect to current tile
+	for (let s=0; s<=num_steps; s++){
+		let prc = s/num_steps
+		if (prc <= turn_prc){
+			let pnt = {
+				x : (1.0-prc) * actor.cur_tile.x + prc * actor.next_tile.x +actor.offset_dist,
+				y : (1.0-prc) * actor.cur_tile.y + prc * actor.next_tile.y +actor.offset_dist,
+				z : (1.0-prc) * actor.cur_tile.z + prc * actor.next_tile.z +actor.offset_dist
+			}
+			pnts.push(pnt)
+		}
+	}
 
 
-		let spacing = 30;
-		let start_pnt = Math.floor(num_steps*turn_prc)
-		if(actor.trail_tiles.length < trail_length)	start_pnt = 0
-		for (let i=start_pnt; i<pnts.length-spacing-1; i++){
+	let spacing = 30;
+	let start_pnt = Math.floor(num_steps*turn_prc)
+	if(actor.trail_tiles.length < trail_length)	start_pnt = 0
+	for (let i=start_pnt; i<pnts.length-spacing-1; i++){
 
+		if (i%2 == 0){
 			stroke(actor.col)
 			let a = pnts[i]
 			let b = pnts[i+spacing]
 			line(a.x,a.y,a.z, b.x,b.y,b.z)
 		}
-
-
-		/*
-		for(let i=trail_start; i<actor.trail_tiles.length-1; i++){
-
-			let x0 = actor.trail_tiles[i-1].x+offset_dist
-			let y0 = actor.trail_tiles[i-1].y+offset_dist
-			let z0 = actor.trail_tiles[i-1].z+offset_dist
-
-			let x1 = actor.trail_tiles[i].x+offset_dist
-			let y1 = actor.trail_tiles[i].y+offset_dist
-			let z1 = actor.trail_tiles[i].z+offset_dist
-
-			let x2 = actor.trail_tiles[i+1].x+offset_dist
-			let y2 = actor.trail_tiles[i+1].y+offset_dist
-			let z2 = actor.trail_tiles[i+1].z+offset_dist
-
-
-			let num_steps = 10
-			for (let s=0; s<=num_steps; s++){
-				let prc = s/num_steps
-				let a_x = (1.0-prc) * x0 + prc * x1;
-				let a_y = (1.0-prc) * y0 + prc * y1;
-				let a_z = (1.0-prc) * z0 + prc * z1;
-
-				let b_x = (1.0-prc) * x1 + prc * x2;
-				let b_y = (1.0-prc) * y1 + prc * y2;
-				let b_z = (1.0-prc) * z1 + prc * z2;
-
-				line(a_x,a_y,a_z, b_x,b_y,b_z)
-			}
-
-
-
-			// if (i==actor.trail_tiles.length-2){
-			// 	x2 = (1.0-turn_prc) * x1 + turn_prc * x2
-			// 	y2 = (1.0-turn_prc) * y1 + turn_prc * y2
-			// 	z2 = (1.0-turn_prc) * z1 + turn_prc * z2
-			// }		
-
-			// line(x1, y1, z1, x2, y2, z2)
-
-		}
-		*/
-
 	}
+}
 
-	
+function update_actor(turn_prc){
 
 }
 
-function make_turn_end_decision(actor){
+function end_actor_turn(actor){
+
 	//prev tile becomes next tile
 	actor.cur_tile = actor.next_tile;
 
@@ -178,6 +145,13 @@ function make_turn_end_decision(actor){
 	if (actor.type == "pacman"){
 		actor.cur_tile.has_pellet = false
 	}
+
+	// get our next target
+	make_turn_end_decision(actor)
+}
+
+function make_turn_end_decision(actor){
+	
 
 	//pacman can be keyboard controlled
 	if (actor.type == "pacman" && player_control){
