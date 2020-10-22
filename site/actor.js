@@ -1,4 +1,4 @@
-
+const trail_prc_spacing = 0.1
 
 function make_actor({type, c,r,d, col, target_actor, scatter_tile}){
 
@@ -6,6 +6,7 @@ function make_actor({type, c,r,d, col, target_actor, scatter_tile}){
 		type:type,
 		dir:1,
 		travel_prc: 0,
+		next_prc_to_store_pnt : 0,
 		cur_tile: grid[c][r][d],
 		next_tile: grid[c][r][d],
 		target_actor : target_actor,
@@ -25,17 +26,13 @@ function make_actor({type, c,r,d, col, target_actor, scatter_tile}){
 	return actor
 }
 
-function draw_actor(actor, turn_prc){
+function draw_actor(actor){
 	fill(actor.col)
 
 	const { cur_tile } = actor;
 	const { next_tile } = actor;
 
-	let x = (1.0-turn_prc) * cur_tile.x + turn_prc * next_tile.x
-	let y = (1.0-turn_prc) * cur_tile.y + turn_prc * next_tile.y
-	let z = (1.0-turn_prc) * cur_tile.z + turn_prc * next_tile.z
-
-	
+	let pos = lerp_pnt(actor.cur_tile, actor.next_tile, actor.travel_prc, 0)
 
 	fill(actor.col)
 	stroke(actor.col)
@@ -43,14 +40,10 @@ function draw_actor(actor, turn_prc){
 	if (show_actors){
 		push()
 		noFill()
-		translate(x,y,z)
+		translate(pos.x,pos.y,pos.z)
 		sphere(tile_size*0.4)
 
 		pop()
-
-		// stroke(0)
-		// strokeWeight(1)
-		// ellipse(x, y, tile_size*0.4, tile_size*0.4)
 
 		//testing
 		let test_pos = get_tile_pos_tile(get_target_tile(actor))
@@ -74,63 +67,64 @@ function draw_trail(actor){
 	strokeWeight(1)
 	stroke(actor.col)
 
-	let trail_start = Math.max(1, actor.trail_tiles.length-trail_length)
-
-	let pnts = []
-	let num_steps = 10
-	for(let i=trail_start; i<actor.trail_tiles.length-1; i++){
-
-		let x1 = actor.trail_tiles[i].x+actor.offset_dist
-		let y1 = actor.trail_tiles[i].y+actor.offset_dist
-		let z1 = actor.trail_tiles[i].z+actor.offset_dist
-
-		let x2 = actor.trail_tiles[i+1].x+actor.offset_dist
-		let y2 = actor.trail_tiles[i+1].y+actor.offset_dist
-		let z2 = actor.trail_tiles[i+1].z+actor.offset_dist
-		
-		for (let s=0; s<=num_steps; s++){
-			let prc = s/num_steps
-			
-			let pnt = {
-				x : (1.0-prc) * x1 + prc * x2,
-				y : (1.0-prc) * y1 + prc * y2,
-				z : (1.0-prc) * z1 + prc * z2
-			}
-
-			pnts.push(pnt)
-		}
-	}
-
-	//connect to current tile
-	for (let s=0; s<=num_steps; s++){
-		let prc = s/num_steps
-		if (prc <= turn_prc){
-			let pnt = {
-				x : (1.0-prc) * actor.cur_tile.x + prc * actor.next_tile.x +actor.offset_dist,
-				y : (1.0-prc) * actor.cur_tile.y + prc * actor.next_tile.y +actor.offset_dist,
-				z : (1.0-prc) * actor.cur_tile.z + prc * actor.next_tile.z +actor.offset_dist
-			}
-			pnts.push(pnt)
-		}
-	}
-
 
 	let spacing = 30;
-	let start_pnt = Math.floor(num_steps*turn_prc)
-	if(actor.trail_tiles.length < trail_length)	start_pnt = 0
-	for (let i=start_pnt; i<pnts.length-spacing-1; i++){
-
-		if (i%2 == 0){
-			stroke(actor.col)
-			let a = pnts[i]
-			let b = pnts[i+spacing]
-			line(a.x,a.y,a.z, b.x,b.y,b.z)
-		}
+	let start_pnt = Math.max(0, actor.trail_pnts.length-trail_length)
+	for (let i=start_pnt; i<actor.trail_pnts.length-spacing-1; i++){
+		stroke(actor.col)
+		let a = actor.trail_pnts[i]
+		let b = actor.trail_pnts[i+spacing]
+		line(a.x,a.y,a.z, b.x,b.y,b.z)
 	}
 }
 
-function update_actor(turn_prc){
+function update_actor(actor, turn_prc_step){
+	let prev_prc = actor.travel_prc
 
+	//move towards the goal
+	actor.travel_prc += turn_prc_step
+	//console.log(actor.travel_prc)
+
+	//see if we should store one or more points
+	while (actor.travel_prc > actor.next_prc_to_store_pnt){
+
+		let pnt = lerp_pnt(actor.cur_tile, actor.next_tile, actor.next_prc_to_store_pnt, actor.offset_dist)
+		actor.trail_pnts.push(pnt)
+
+		actor.next_prc_to_store_pnt += trail_prc_spacing
+	}
+
+
+	//see if we hit a turn end
+	if (actor.travel_prc > 1){
+		actor.travel_prc -= 1
+
+		//reset the next prc to store
+		actor.next_prc_to_store_pnt = trail_prc_spacing
+
+		//end the turn
+		end_actor_turn(actor)
+	}
+
+	//you could check if travel prc is still over 1 and call this function again recursively with a turn prc of 0
+}
+
+function lerp_pnt(pos_a, pos_b, prc, offset){
+	let x1 = pos_a.x+offset
+	let y1 = pos_a.y+offset
+	let z1 = pos_a.z+offset
+
+	let x2 = pos_b.x+offset
+	let y2 = pos_b.y+offset
+	let z2 = pos_b.z+offset
+
+	let pnt = {
+		x : (1.0-prc) * x1 + prc * x2,
+		y : (1.0-prc) * y1 + prc * y2,
+		z : (1.0-prc) * z1 + prc * z2
+	}
+	
+	return pnt
 }
 
 function end_actor_turn(actor){

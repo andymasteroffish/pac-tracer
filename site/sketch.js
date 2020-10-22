@@ -4,7 +4,7 @@
 
 const tile_size = 20;
 
-const trail_length = 30;
+const trail_length = 200;
 
 let advance_time = true;
 let player_control = false;
@@ -139,16 +139,30 @@ function draw() {
 	if (!game_over){
 		//advance time
 		if (advance_time){
-			turn_prc += 0.1;
+			// turn_prc += 0.1;
+			// if (keyIsPressed && key == 'f'){
+			// 	console.log("now")
+			// 	turn_prc = 1
+			// }
+			// if (turn_prc >= 1){
+			// 	new_turn()
+			// }
+			//update everybody
+			let turn_step = 0.1;
 			if (keyIsPressed && key == 'f'){
-				console.log("now")
-				turn_prc = 1
+				turn_step = 1
 			}
-			if (turn_prc >= 1){
-				new_turn()
-			}
+			actors.forEach( actor => {
+				update_actor(actor, turn_step)
+			})
 		}
+
+
 	}
+
+	
+
+	//draw this thing
 
 	push();
 	//translate(view_offset_x,view_offset_y);
@@ -203,7 +217,7 @@ function draw() {
 
 	//draw the actors
 	actors.forEach(actor => {
-		draw_actor(actor, turn_prc)
+		draw_actor(actor)
 	})
 
 	//testing
@@ -335,6 +349,7 @@ function mouseWheel(event) {
   //return false;
 }
 
+//KILL ME
 function new_turn(){
 	turn_num++;
 	turn_prc = 0;
