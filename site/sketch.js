@@ -4,7 +4,7 @@
 
 const tile_size = 20;
 
-const trail_length = 200;
+const trail_length = 2000;
 
 let advance_time = true;
 let player_control = false;
@@ -27,9 +27,13 @@ let game_over = false
 let pacman;
 let actors = []
 
+let behavior_mode = "scatter"
+
 //timing
-let turn_num = 0;
-let turn_prc = 0;	//percentage until next turn
+let total_prc_time = 0;	
+let game_time = 0;		//estimated in seconds
+
+let next_behavior_change_time = 7
 
 //visual modes
 let show_grid = true
@@ -85,7 +89,7 @@ function setup() {
 			d:0,
 			col : color(255, 20, 20),
 			target_actor:pacman,
-			scatter_tile:{c:0, r:0, d:-1}
+			scatter_tile:{c:num_cols, r:-1, d:-1}
 		})
 	)
 
@@ -97,7 +101,7 @@ function setup() {
 			d:8,
 			col: color(242, 126, 205),
 			target_actor:pacman,
-			scatter_tile:{c:0, r:8, d:9}
+			scatter_tile:{c:-1, r:-1, d:num_depth}
 		})
 	)
 
@@ -108,7 +112,7 @@ function setup() {
 		d:8,
 		col: color(47, 245, 245),
 		target_actor:pacman,
-		scatter_tile:{c:num_cols, r:0, d:num_depth}
+		scatter_tile:{c:num_cols, r:num_rows, d:num_depth}
 	})
 	inky.blinky = actors[0];	//this ghost is the only one that cares about another ghost
 	actors.push(inky)
@@ -121,13 +125,26 @@ function setup() {
 			d:0,
 			col: color(242, 174, 63),
 			target_actor:pacman,
-			scatter_tile:{c:num_rows, r:8, d:-1}
+			scatter_tile:{c:-1, r:num_rows, d:-1}
 		})
 	)
 
 	actors.push(pacman)
 
 	cursor_tile = grid[0][0][0]
+}
+
+function set_behavior(new_setting){
+	behavior_mode = new_setting
+
+	//flip all ghost directions
+	actors.forEach(actor => {
+		if (actor.type != "pacman"){
+			flip_direction(actor)
+		}
+	})
+
+	console.log("behavior is now: "+behavior_mode)
 }
 
 function draw() {
@@ -139,24 +156,34 @@ function draw() {
 	if (!game_over){
 		//advance time
 		if (advance_time){
-			// turn_prc += 0.1;
-			// if (keyIsPressed && key == 'f'){
-			// 	console.log("now")
-			// 	turn_prc = 1
-			// }
-			// if (turn_prc >= 1){
-			// 	new_turn()
-			// }
-			//update everybody
+			//figure out how much time to pass
 			let turn_step = 0.1;
 			if (keyIsPressed && key == 'f'){
-				turn_step = 1
+				turn_step = 1.5
 			}
+
+			//update eveyrbody
 			actors.forEach( actor => {
 				update_actor(actor, turn_step)
 			})
-		}
 
+			//estimate the time in seconds
+			total_prc_time += turn_step
+			game_time = total_prc_time / (10/pacman.speed_mod)	//it takes pacman about a second to go 10 tiles
+		
+			//console.log("time to mode swith "+(next_behavior_change_time-game_time) )
+			//time to swicth behaviors?
+			if (game_time > next_behavior_change_time){
+				if (behavior_mode == "chase"){
+					set_behavior("scatter")
+					next_behavior_change_time += game_time<50 ?  7 : 5
+				}else{
+					set_behavior("chase")
+					next_behavior_change_time += 20
+				}
+			}
+
+		}
 
 	}
 
@@ -336,6 +363,14 @@ function keyPressed(){
 	if (key == 'p'){
 		print_level()
 	}
+
+	if (key == 'm'){
+		if (behavior_mode == "scatter"){
+			set_behavior("chase");
+		}else{
+			set_behavior("scatter");
+		}
+	}
 }
 
 function mouseWheel(event) {
@@ -350,12 +385,12 @@ function mouseWheel(event) {
 }
 
 //KILL ME
-function new_turn(){
-	turn_num++;
-	turn_prc = 0;
+// function new_turn(){
+// 	turn_num++;
+// 	turn_prc = 0;
 
-	//have all actors make a decision
-	actors.forEach(actor => {
-		end_actor_turn(actor);
-	})
-}
+// 	//have all actors make a decision
+// 	actors.forEach(actor => {
+// 		end_actor_turn(actor);
+// 	})
+// }

@@ -10,12 +10,22 @@ function make_actor({type, c,r,d, col, target_actor, scatter_tile}){
 		cur_tile: grid[c][r][d],
 		next_tile: grid[c][r][d],
 		target_actor : target_actor,
+		target_tile : grid[c][r][d],
 		scatter_tile : scatter_tile,
 		col: col,
 		trail_tiles : [],
 		trail_pnts : []
 	}
 
+	//setting the movement speeds
+	actor.speed_mod = 1;
+	if (actor.type == "pacman"){
+		actor.speed_mod = 0.8;
+	}else{
+		actor.speed_mod = 0.75;	//should be 0.75
+	}
+
+	//offset
 	actor.offset_dist = 6;
 	if (actor.type == "pacman")	actor.offset_dist *= 0
 	if (actor.type == "blinky")	actor.offset_dist *= 1
@@ -46,7 +56,7 @@ function draw_actor(actor){
 		pop()
 
 		//testing
-		let test_pos = get_tile_pos_tile(get_target_tile(actor))
+		let test_pos =  get_tile_pos_tile(actor.target_tile)
 		noStroke()
 		push()
 		let test_offset = actor.offset_dist * 0.2
@@ -79,10 +89,9 @@ function draw_trail(actor){
 }
 
 function update_actor(actor, turn_prc_step){
-	let prev_prc = actor.travel_prc
 
 	//move towards the goal
-	actor.travel_prc += turn_prc_step
+	actor.travel_prc += turn_prc_step * actor.speed_mod
 	//console.log(actor.travel_prc)
 
 	//see if we should store one or more points
@@ -107,6 +116,14 @@ function update_actor(actor, turn_prc_step){
 	}
 
 	//you could check if travel prc is still over 1 and call this function again recursively with a turn prc of 0
+}
+
+function flip_direction(actor){
+	actor.dir = opposite_dir(actor.dir)
+	//swap next and current
+	let temp = actor.next_tile
+	actor.next_tile = actor.cur_tile
+	actor.cur_tile = temp
 }
 
 function lerp_pnt(pos_a, pos_b, prc, offset){
@@ -160,7 +177,23 @@ function make_turn_end_decision(actor){
 	}
 
 	//figure out the target
-	let target_tile = get_target_tile(actor)
+	let target_tile;
+
+	//pacman always goes for what he wants
+	if (actor.type == "pacman"){
+		target_tile = get_target_tile(actor)
+	}
+	//ghosts have different behaviors
+	else{
+		if (behavior_mode == "chase"){
+			target_tile = get_target_tile(actor)
+		}
+		if (behavior_mode == "scatter"){
+			target_tile = actor.scatter_tile
+		}
+	}
+	actor.target_tile = target_tile
+	
 
 	//now we need to figure out where we can go
 	let possible_dirs = []
