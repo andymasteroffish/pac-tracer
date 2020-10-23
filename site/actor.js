@@ -55,8 +55,10 @@ function draw_actor(actor){
 		sphere(tile_size*0.4)
 
 		pop()
+	}
 
-		//testing
+	//demoing their target tile
+	if (show_actor_targets){
 		let test_pos =  get_tile_pos_tile(actor.target_tile)
 		noStroke()
 		push()

@@ -3,8 +3,9 @@
 
 //visual modes
 let show_grid = true;
-let show_trails = false;
-let show_actors = true;
+let show_trails = true;
+let show_actors = false;
+let show_actor_targets = false;
 let show_connections = true;
 let show_cursor = false;
 
@@ -48,10 +49,24 @@ let game_time = 0;		//estimated in seconds
 let next_behavior_change_time = 7
 
 let cursor_tile = null
-let mouse_control = false;
+let mouse_control = true;
+
+function set_static_mode(){
+	advance_time = false
+	for (let i=0; i<950; i++){
+		update(1)
+	}
+	show_actors = false
+	show_grid = true
+	show_connections = true
+	show_trails = true
+	show_cursor = false
+	mouse_control = false
+}
 
 function setup() {
 	createCanvas(window.innerWidth,window.innerHeight, WEBGL);
+
 
 	set_initial_zoom();
 
@@ -142,6 +157,10 @@ function setup() {
 
 	cursor_tile = grid[0][0][0]
 
+	for (let i=0; i<100; i++){
+		update(1)
+	}
+
 	check_url()
 }
 
@@ -163,15 +182,7 @@ function check_url(){
 
 	//is this in static frame mode?
 	if (argments_text == "frame"){
-		advance_time = false
-		for (let i=0; i<950; i++){
-			update(1)
-		}
-		show_actors = false
-		show_grid = true
-		show_connections = true
-		show_trails = true
-		show_cursor = false
+		set_static_mode();
 	}
 }
 
@@ -216,12 +227,12 @@ function update(turn_step){
 }
 
 function draw() {
-	background(250)
+	background(251, 250, 255)
 
 	if (advance_time){
-		let turn_step = 0.1;
+		let turn_step = 0.5;
 		if (keyIsPressed && key == 'f'){
-			turn_step = 1.5
+			turn_step = 2;
 		}
 		update(turn_step)
 	}
@@ -229,16 +240,16 @@ function draw() {
 	//draw this thing
 
 	push();
-	//translate(view_offset_x,view_offset_y);
+
+	//slowly rotate the camera
+	let rot_limit =  PI/8
+	view_rot.x = sin(game_time*0.09) * rot_limit;
+	view_rot.y = sin(game_time*.111) * rot_limit;
 	
 	if (mouse_control){
-		let rot_limit =  PI/2
-		view_rot.y = map(mouseX,0,width,-rot_limit, rot_limit);
-		view_rot.x = map(mouseY,0,height,-rot_limit, rot_limit);
-	}else{
 		let rot_limit =  PI/8
-		view_rot.x = sin(game_time*0.9) * rot_limit;
-		view_rot.y = sin(game_time*1.11) * rot_limit;
+		view_rot.y += map(mouseX,0,width,-rot_limit, rot_limit);
+		view_rot.x += map(mouseY,0,height,-rot_limit, rot_limit);
 	}
 	rotateX(view_rot.x);
 	rotateY(view_rot.y);
@@ -339,9 +350,9 @@ function keyPressed(){
 	if (key == '3'){
 		show_actors = !show_actors
 	}
-	if (key == '4'){
-		show_connections = !show_connections
-	}
+	// if (key == '4'){
+	// 	show_connections = !show_connections
+	// }
 
 	//moving the cursor
 	if (key == 'w'){
