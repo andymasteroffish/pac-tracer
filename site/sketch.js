@@ -12,7 +12,7 @@ let show_cursor = false;
 //spacing
 const tile_size = 20;
 
-const trail_length = 2000;
+const trail_length = 3000;
 
 let advance_time = true;
 
@@ -48,7 +48,7 @@ let game_time = 0;		//estimated in seconds
 let next_behavior_change_time = 7
 
 let cursor_tile = null
-let mouse_control = true;
+let mouse_control = false;
 
 function setup() {
 	createCanvas(window.innerWidth,window.innerHeight, WEBGL);
@@ -164,11 +164,14 @@ function check_url(){
 	//is this in static frame mode?
 	if (argments_text == "frame"){
 		advance_time = false
-		for (let i=0; i<100; i++){
-			actors.forEach( actor => {
-				update_actor(actor, 1)
-			})
+		for (let i=0; i<950; i++){
+			update(1)
 		}
+		show_actors = false
+		show_grid = true
+		show_connections = true
+		show_trails = true
+		show_cursor = false
 	}
 }
 
@@ -185,37 +188,28 @@ function set_behavior(new_setting){
 	console.log("behavior is now: "+behavior_mode)
 }
 
-function update(){
+function update(turn_step){
 	if (!game_over){
-		//advance time
-		if (advance_time){
-			//figure out how much time to pass
-			let turn_step = 0.1;
-			if (keyIsPressed && key == 'f'){
-				turn_step = 1.5
+			
+		//update eveyrbody
+		actors.forEach( actor => {
+			update_actor(actor, turn_step)
+		})
+
+		//estimate the time in seconds
+		total_prc_time += turn_step
+		game_time = total_prc_time / (10/pacman.speed_mod)	//it takes pacman about a second to go 10 tiles
+	
+		//console.log("time to mode swith "+(next_behavior_change_time-game_time) )
+		//time to swicth behaviors?
+		if (game_time > next_behavior_change_time){
+			if (behavior_mode == "chase"){
+				set_behavior("scatter")
+				next_behavior_change_time += game_time<50 ?  7 : 5
+			}else{
+				set_behavior("chase")
+				next_behavior_change_time += 20
 			}
-
-			//update eveyrbody
-			actors.forEach( actor => {
-				update_actor(actor, turn_step)
-			})
-
-			//estimate the time in seconds
-			total_prc_time += turn_step
-			game_time = total_prc_time / (10/pacman.speed_mod)	//it takes pacman about a second to go 10 tiles
-		
-			//console.log("time to mode swith "+(next_behavior_change_time-game_time) )
-			//time to swicth behaviors?
-			if (game_time > next_behavior_change_time){
-				if (behavior_mode == "chase"){
-					set_behavior("scatter")
-					next_behavior_change_time += game_time<50 ?  7 : 5
-				}else{
-					set_behavior("chase")
-					next_behavior_change_time += 20
-				}
-			}
-
 		}
 	}
 
@@ -224,7 +218,13 @@ function update(){
 function draw() {
 	background(250)
 
-	update()
+	if (advance_time){
+		let turn_step = 0.1;
+		if (keyIsPressed && key == 'f'){
+			turn_step = 1.5
+		}
+		update(turn_step)
+	}
 
 	//draw this thing
 
@@ -237,8 +237,8 @@ function draw() {
 		view_rot.x = map(mouseY,0,height,-rot_limit, rot_limit);
 	}else{
 		let rot_limit =  PI/8
-		view_rot.x = rot_limit;
-		view_rot.y = rot_limit;
+		view_rot.x = sin(game_time*0.9) * rot_limit;
+		view_rot.y = sin(game_time*1.11) * rot_limit;
 	}
 	rotateX(view_rot.x);
 	rotateY(view_rot.y);
