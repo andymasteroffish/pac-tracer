@@ -1,13 +1,20 @@
 //https://www.gamasutra.com/view/feature/3938/the_pacman_dossier.php?print=1
 
 
+//visual modes
+let show_grid = true;
+let show_trails = false;
+let show_actors = true;
+let show_connections = true;
+let show_cursor = false;
 
+
+//spacing
 const tile_size = 20;
 
 const trail_length = 2000;
 
 let advance_time = true;
-let player_control = false;
 
 let num_cols = 28;
 let num_rows = 31;
@@ -16,18 +23,23 @@ let num_depth = 9;
 let raw_map, raw_map_old;
 let grid = []
 
+//view
+
 let view_offset_x = 20;
 let view_offset_y = 20;
 let view_zoom = 1;
+let view_rot = {x:0, y:0, z:0};
 
-let game_over = false
-
+const preferred_width = 650;
+const preferred_height = 750;
 
 //actors
 let pacman;
 let actors = []
 
+//state
 let behavior_mode = "scatter"
+let game_over = false
 
 //timing
 let total_prc_time = 0;	
@@ -35,16 +47,13 @@ let game_time = 0;		//estimated in seconds
 
 let next_behavior_change_time = 7
 
-//visual modes
-let show_grid = false
-let show_trails = true
-let show_actors = false
-let show_connections = false
-
 let cursor_tile = null
+let mouse_control = true;
 
 function setup() {
 	createCanvas(window.innerWidth,window.innerHeight, WEBGL);
+
+	set_initial_zoom();
 
 	raw_map_old = make_raw_level()
 	raw_map = test_level_json()
@@ -132,6 +141,35 @@ function setup() {
 	actors.push(pacman)
 
 	cursor_tile = grid[0][0][0]
+
+	check_url()
+}
+
+function set_initial_zoom(){
+	let w_zoom = width / preferred_width
+	let h_zoom = height / preferred_height
+	view_zoom = Math.min(w_zoom, h_zoom)
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  set_initial_zoom();
+}
+
+function check_url(){
+	let url = getURL();
+	let argments_text = url.substring(url.indexOf("?") + 1);
+	console.log(argments_text)
+
+	//is this in static frame mode?
+	if (argments_text == "frame"){
+		advance_time = false
+		for (let i=0; i<100; i++){
+			actors.forEach( actor => {
+				update_actor(actor, 1)
+			})
+		}
+	}
 }
 
 function set_behavior(new_setting){
@@ -147,12 +185,7 @@ function set_behavior(new_setting){
 	console.log("behavior is now: "+behavior_mode)
 }
 
-function draw() {
-	background(250)
-
-	//line(-400,0,400,0)
-    
-
+function update(){
 	if (!game_over){
 		//advance time
 		if (advance_time){
@@ -184,20 +217,34 @@ function draw() {
 			}
 
 		}
-
 	}
 
-	
+}
+
+function draw() {
+	background(250)
+
+	update()
 
 	//draw this thing
 
 	push();
 	//translate(view_offset_x,view_offset_y);
-	let rot_limit =  PI/2
-	rotateY( map(mouseX,0,width,-rot_limit, rot_limit))
-	rotateX( map(mouseY,0,height,-rot_limit, rot_limit))
+	
+	if (mouse_control){
+		let rot_limit =  PI/2
+		view_rot.y = map(mouseX,0,width,-rot_limit, rot_limit);
+		view_rot.x = map(mouseY,0,height,-rot_limit, rot_limit);
+	}else{
+		let rot_limit =  PI/8
+		view_rot.x = rot_limit;
+		view_rot.y = rot_limit;
+	}
+	rotateX(view_rot.x);
+	rotateY(view_rot.y);
+	rotateZ(view_rot.z);
 	scale(view_zoom, view_zoom, view_zoom)
-	translate(-num_cols*tile_size*0.5, -num_rows*tile_size*0.5);
+	translate(-num_cols*tile_size*0.5, -num_rows*tile_size*0.5, -num_depth*tile_size*0.5);
 	
 	
 
@@ -225,11 +272,13 @@ function draw() {
 
 						if (show_connections){
 							for (let dir = 0; dir<NUM_DIRS; dir++){
-								let next = get_tile_in_dir(tile,dir)
-								if (next != null){
-									if (next.open){
-										stroke(0)
-										line(tile.x,tile.y,tile.z, next.x, next.y, next.z)
+								if (dir == DIR_UP || dir == DIR_RIGHT || dir == DIR_IN){
+									let next = get_tile_in_dir(tile,dir)
+									if (next != null){
+										if (next.open){
+											stroke(0)
+											line(tile.x,tile.y,tile.z, next.x, next.y, next.z)
+										}
 									}
 								}
 							}
@@ -247,65 +296,34 @@ function draw() {
 		draw_actor(actor)
 	})
 
-	//testing
-	// fill(47, 245, 245)
-	// let test_pos = get_target_pos(actors[3])
-	// ellipse(test_pos.x+tile_size/2, test_pos.y+tile_size/2, 5)
-	// stroke(244*0.75, 255*0.75, 25*0.75)
-	// noFill()
-	
-	// let test_pos = get_tile_pos_tile(get_target_tile(pacman))
-	// push()
-	// translate(test_pos.x, test_pos.y, test_pos.z)
-	// noStroke()
-	// fill(pacman.col)
-	// sphere(tile_size*0.21)
-	// pop()
-
 	//cursor for level debug
-	push()
-	translate(cursor_tile.x, cursor_tile.y, cursor_tile.z)
-	stroke(255,0,0)
-	noFill()
-	box(tile_size)
-	pop()
+	if (show_cursor){
+		push()
+		translate(cursor_tile.x, cursor_tile.y, cursor_tile.z)
+		stroke(255,0,0)
+		noFill()
+		box(tile_size)
+		pop()
+	}
 
 	pop();
+
+	//test initial zoom
+	// noFill();
+	// stroke(255,0,0);
+	// rect(-preferred_width/2,-preferred_height/2, preferred_width,preferred_height);
 
 	//fill(0)
 	//text("FPS: "+frameRate(), 10,15)
 }
 
 function mousePressed(){
-	// let m_x = mouseX - view_offset_x
-	// let m_y = mouseY - view_offset_y
-
-	// for (let c=0; c<num_cols; c++){
-	// 	for (let r=0; r<num_rows; r++){
-	// 		if (m_x > c*tile_size && m_x < (c+1)*tile_size && m_y > r*tile_size && m_y < (r+1)*tile_size){
-	// 			//actors[0].target_pos = get_tile_pos(c,r)// target_tile = grid[c][r]
-	// 			console.log("mouse tile: "+c+" , "+r)
-	// 		}
-	// 	}
-	// }
 }
 
 function keyPressed(){
 	if (key == 'Enter'){
 		new_turn();
 	}
-	// if (keyCode === LEFT_ARROW) {
-	// 	pacman.dir = DIR_LEFT
-	// }
-	// if (keyCode === RIGHT_ARROW) {
-	// 	pacman.dir = DIR_RIGHT
-	// }
-	// if (keyCode === UP_ARROW) {
-	// 	pacman.dir = DIR_UP
-	// }
-	// if (keyCode === DOWN_ARROW) {
-	// 	pacman.dir = DIR_DOWN
-	// }
 
 	if (key=='0'){
 		advance_time = !advance_time
@@ -374,14 +392,15 @@ function keyPressed(){
 }
 
 function mouseWheel(event) {
-  print(event.delta);
-  //move the square according to the vertical scroll amount
-  view_zoom += event.delta * 0.01;
-  
-  if (view_zoom < 0.1)	view_zoom = 0.1
-  	console.log(view_zoom)
+	if (mouse_control){
+		//move the square according to the vertical scroll amount
+		view_zoom += event.delta * 0.01;
+	  
+		if (view_zoom < 0.1)	view_zoom = 0.1
+	  	console.log(view_zoom)
+	}
   //uncomment to block page scrolling
-  //return false;
+  return false;
 }
 
 //KILL ME

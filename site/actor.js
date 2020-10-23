@@ -14,7 +14,7 @@ function make_actor({type, c,r,d, col, target_actor, scatter_tile}){
 		target_tile : grid[c][r][d],
 		scatter_tile : scatter_tile,
 		col: col,
-		trail_tiles : [],
+		//trail_tiles : [],
 		trail_pnts : []
 	}
 
@@ -192,7 +192,7 @@ function end_actor_turn(actor){
 	actor.cur_tile = actor.next_tile;
 
 	//store it
-	actor.trail_tiles.push(actor.cur_tile)
+	//actor.trail_tiles.push(actor.cur_tile)
 
 	//pacman eats
 	if (actor.type == "pacman"){
@@ -205,19 +205,6 @@ function end_actor_turn(actor){
 
 function make_turn_end_decision(actor){
 	
-
-	//pacman can be keyboard controlled
-	if (actor.type == "pacman" && player_control){
-		let next  = get_tile_in_dir(actor.cur_tile, actor.dir)
-		if (next != null){
-			if (next.open){
-				actor.next_tile = get_tile_in_dir(actor.cur_tile, actor.dir)
-			}
-		}
-		
-		return
-	}
-
 	//figure out the target
 	let target_tile;
 
