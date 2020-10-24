@@ -157,11 +157,15 @@ function setup() {
 
 	cursor_tile = grid[0][0][0]
 
-	for (let i=0; i<100; i++){
-		update(1)
+	check_url()
+
+	if (advance_time){
+		for (let i=0; i<50; i++){
+			update(1)
+		}
 	}
 
-	check_url()
+	
 }
 
 function set_initial_zoom(){
@@ -230,7 +234,7 @@ function draw() {
 	background(251, 250, 255)
 
 	if (advance_time){
-		let turn_step = 0.5;
+		let turn_step = 1;
 		if (keyIsPressed && key == 'f'){
 			turn_step = 2;
 		}
