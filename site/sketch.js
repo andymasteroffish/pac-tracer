@@ -51,6 +51,16 @@ let next_behavior_change_time = 7
 let cursor_tile = null
 let mouse_control = true;
 
+//shader stuff
+//https://github.com/aferriss/p5jsShaderExamples
+let effect_shader;
+let fbo;	//trying drawing into this
+let use_shader = true;
+
+function preload(){
+	effect_shader = loadShader('effect.vert', 'effect.frag');
+}
+
 function set_static_mode(){
 	advance_time = false
 	for (let i=0; i<950; i++){
@@ -65,7 +75,27 @@ function set_static_mode(){
 }
 
 function setup() {
-	createCanvas(window.innerWidth,window.innerHeight, WEBGL);
+	createCanvas(window.innerWidth, window.innerHeight, WEBGL);
+
+	p5.disableFriendlyErrors = true;	//this can help performance a bit
+
+	fbo = createGraphics(window.innerWidth, window.innerHeight, WEBGL);
+
+	// pg.background(255,255,255,0);
+	// pg.clear()
+	// pg.fill(255);
+	// pg.rect(0,0,pg.width,pg.height);
+	// pg.fill(0,0,255);
+	// for (let i=0; i<100; i++){
+	// pg.ellipse(random(0,pg.width),random(0,pg.height), random(10,100), random(10,100))
+	// }
+
+	// pg.fill(255);
+	// pg.ellipse(0, 0, 100, 100)
+	// pg.fill(128);
+	// pg.ellipse(pg.width/2, pg.height/2, 100, 100)
+	// pg.fill(0);
+	// pg.ellipse(pg.width, pg.height, 100, 100)
 
 
 	set_initial_zoom();
@@ -231,7 +261,16 @@ function update(turn_step){
 }
 
 function draw() {
-	background(251, 250, 255)
+	//fbo.background(251, 250, 255)
+	fbo.clear(251, 250, 255)
+
+	fbo.fill(255, 244, 230);//252, 242, 220);//255, 251, 237);//255, 254, 250);//251, 247, 255);//251, 250, 255)
+
+	//fbo.fill(50)
+	fbo.push()
+	fbo.translate(0,0,-200)
+	fbo.rect(-fbo.width, -fbo.height, fbo.width*2, fbo.height*2)
+	fbo.pop()
 
 	if (advance_time){
 		let turn_step = 1;
@@ -243,7 +282,7 @@ function draw() {
 
 	//draw this thing
 
-	push();
+	fbo.push();
 
 	//slowly rotate the camera
 	let rot_limit =  PI/8
@@ -255,11 +294,11 @@ function draw() {
 		view_rot.y += map(mouseX,0,width,-rot_limit, rot_limit);
 		view_rot.x += map(mouseY,0,height,-rot_limit, rot_limit);
 	}
-	rotateX(view_rot.x);
-	rotateY(view_rot.y);
-	rotateZ(view_rot.z);
-	scale(view_zoom, view_zoom, view_zoom)
-	translate(-num_cols*tile_size*0.5, -num_rows*tile_size*0.5, -num_depth*tile_size*0.5);
+	fbo.rotateX(view_rot.x);
+	fbo.rotateY(view_rot.y);
+	fbo.rotateZ(view_rot.z);
+	fbo.scale(view_zoom, view_zoom, view_zoom)
+	fbo.translate(-num_cols*tile_size*0.5, -num_rows*tile_size*0.5, -num_depth*tile_size*0.5);
 	
 	
 
@@ -273,17 +312,18 @@ function draw() {
 					if (tile.open){
 						let size = tile_size*0.1
 						if (tile.has_pellet){
-							fill(0)
+							fbo.fill(0)
 							size= tile_size*0.20
 						}else{
-							fill(134, 41, 140)
+							fbo.fill(134, 41, 140)
 						}
 						if (show_connections)	size *= 0.4
-						noStroke()
-						push()
-						translate(tile.x, tile.y, tile.z)
-						sphere(size)
-						pop()
+						size *= 0.5
+						fbo.noStroke()
+						fbo.push()
+						fbo.translate(tile.x, tile.y, tile.z)
+						fbo.sphere(size)
+						fbo.pop()
 
 						if (show_connections){
 							for (let dir = 0; dir<NUM_DIRS; dir++){
@@ -291,8 +331,9 @@ function draw() {
 									let next = get_tile_in_dir(tile,dir)
 									if (next != null){
 										if (next.open){
-											stroke(0)
-											line(tile.x,tile.y,tile.z, next.x, next.y, next.z)
+											//fbo.stroke(255);
+											fbo.stroke(200);
+											fbo.line(tile.x,tile.y,tile.z, next.x, next.y, next.z)
 										}
 									}
 								}
@@ -306,6 +347,7 @@ function draw() {
 		}
 	}
 
+	
 	//draw the actors
 	actors.forEach(actor => {
 		draw_actor(actor)
@@ -313,15 +355,16 @@ function draw() {
 
 	//cursor for level debug
 	if (show_cursor){
-		push()
-		translate(cursor_tile.x, cursor_tile.y, cursor_tile.z)
-		stroke(255,0,0)
-		noFill()
-		box(tile_size)
-		pop()
+		fbo.push()
+		fbo.translate(cursor_tile.x, cursor_tile.y, cursor_tile.z)
+		fbo.stroke(255,0,0)
+		fbo.noFill()
+		fbo.box(tile_size)
+		fbo.pop()
 	}
+	
 
-	pop();
+	fbo.pop();
 
 	//test initial zoom
 	// noFill();
@@ -330,6 +373,34 @@ function draw() {
 
 	//fill(0)
 	//text("FPS: "+frameRate(), 10,15)
+
+	if (use_shader){
+		shader(effect_shader);
+		// // lets just send the cam to our shader as a uniform
+		effect_shader.setUniform('tex0', fbo);
+		// // we will also need the resolution of our sketch as a vec2
+		effect_shader.setUniform('resolution', [width, height]);
+
+		effect_shader.setUniform('offset_range', map(mouseX,100,width, 0,40, true));
+
+		effect_shader.setUniform('stepSize', [1.0/width, 1.0/height]);
+
+		effect_shader.setUniform('game_time', game_time);
+
+		// how far away to sample from the current pixel
+		// 1 is 1 pixel away
+		let dist = 1;//map(mouseX,20,width,0,10, true)	//0.5 looks cool
+		effect_shader.setUniform('dist', dist);
+		console.log("dist "+dist)
+
+		fill(255)
+		rect(0,0,width,height)
+	
+	}
+	else{
+		tint(255)
+		image(fbo, -width/2,-height/2)
+	}
 }
 
 function mousePressed(){
