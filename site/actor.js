@@ -38,35 +38,35 @@ function make_actor({type, c,r,d, col, target_actor, scatter_tile}){
 }
 
 function draw_actor(actor){
-	fill(actor.col)
+	fbo.fill(actor.col)
 
 	const { cur_tile } = actor;
 	const { next_tile } = actor;
 
 	let pos = lerp_pnt(actor.cur_tile, actor.next_tile, actor.travel_prc, 0)
 
-	fill(actor.col)
-	stroke(actor.col)
+	fbo.fill(actor.col)
+	fbo.stroke(actor.col)
 
 	if (show_actors){
-		push()
-		noFill()
-		translate(pos.x,pos.y,pos.z)
-		sphere(tile_size*0.4)
+		fbo.push()
+		fbo.noFill()
+		fbo.translate(pos.x,pos.y,pos.z)
+		fbo.sphere(tile_size*0.4)
 
-		pop()
+		fbo.pop()
 	}
 
 	//demoing their target tile
 	if (show_actor_targets){
 		let test_pos =  get_tile_pos_tile(actor.target_tile)
-		noStroke()
-		push()
+		fbo.noStroke()
+		fbo.push()
 		let test_offset = actor.offset_dist * 0.2
-		translate(test_pos.x+test_offset, test_pos.y+test_offset, test_pos.z+test_offset)
-		box(tile_size*0.2,tile_size,tile_size*0.2)
-		box(tile_size,tile_size*0.2,tile_size*0.2)
-		pop()
+		fbo.translate(test_pos.x+test_offset, test_pos.y+test_offset, test_pos.z+test_offset)
+		fbo.box(tile_size*0.2,tile_size,tile_size*0.2)
+		fbo.box(tile_size,tile_size*0.2,tile_size*0.2)
+		fbo.pop()
 	}
 
 	//trail
@@ -77,14 +77,14 @@ function draw_actor(actor){
 }
 
 function draw_trail(actor){
-	strokeWeight(1)
-	stroke(actor.col)
+	fbo.strokeWeight(1)
+	fbo.stroke(actor.col)
 
 
 	
 	let start_pnt = Math.max(0, actor.trail_pnts.length-trail_length)
 	for (let i=start_pnt; i<actor.trail_pnts.length-trail_slot_spacing-1; i++){
-		stroke(actor.col)
+		fbo.stroke(actor.col)
 		let a = actor.trail_pnts[i]
 		let b = actor.trail_pnts[i+trail_slot_spacing]
 
@@ -96,7 +96,7 @@ function draw_trail(actor){
 		//on curves, just connect 'em
 		if (matching_dirs <= 1){
 			//strokeWeight(1)
-			line(a.x,a.y,a.z, b.x,b.y,b.z)
+			fbo.line(a.x,a.y,a.z, b.x,b.y,b.z)
 		}
 		//on straight passages, do something else
 		else{
@@ -123,7 +123,7 @@ function draw_trail(actor){
 				new_pos.z += Math.sin(angle) * dist
 			}
 
-			line(new_pos.x,new_pos.y,new_pos.z, b.x,b.y,b.z)
+			fbo.line(new_pos.x,new_pos.y,new_pos.z, b.x,b.y,b.z)
 
 		}
 	}
