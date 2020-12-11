@@ -121,9 +121,9 @@ void main(){
   kernel[6] = 0.0; kernel[7] = 1.0; kernel[8] = 2.0;
 
   // sharpen kernel
-  // kernel[0] = -1.0; kernel[1] = 0.0; kernel[2] = -1.0;
-  // kernel[3] = 0.0; kernel[4] = 5.0; kernel[5] = 0.0;
-  // kernel[6] = -1.0; kernel[7] = 0.0; kernel[8] = -1.0;
+  kernel[0] = -1.0; kernel[1] = 0.0; kernel[2] = -1.0;
+  kernel[3] = 0.0; kernel[4] = 5.0; kernel[5] = 0.0;
+  kernel[6] = -1.0; kernel[7] = 0.0; kernel[8] = -1.0;
 
   // gaussian blur kernel
   // kernel[0] = 1.0; kernel[1] = 2.0; kernel[2] = 1.0;
@@ -170,9 +170,18 @@ void main(){
   //non background colors
   if ( abs(conv.r-bg_col.r) > 0.01 || abs(conv.g-bg_col.g) > 0.01 || abs(conv.b-bg_col.b) > 0.01){
     noise_prc = 0.6 + 0.4 * simplex3d( vec3((uv.x+conv.r)*noise_zoom, (uv.y+conv.g)*noise_zoom, game_time*noise_speed +conv.b+noise_zoom));
-    float noise_grey = 1.0;
-    vec4 noise_col = vec4(noise_grey,noise_grey,noise_grey,1.0);
-    end_col = noise_prc * vec4(conv.rgb,1.0) + (1.0-noise_prc) * noise_col;
+    //float noise_grey = 1.0;
+    //vec4 noise_col = vec4(noise_grey,noise_grey,noise_grey,1.0);
+
+    //make a B color to lerp between with the noise value
+    float mix = 0.6;
+    vec4 alt_col = vec4(1.0,1.0,1.0,1.0);
+    alt_col.r = alt_col.r*mix + conv.r*(1.0-mix);
+    alt_col.g = alt_col.g*mix + conv.g*(1.0-mix);
+    alt_col.b = alt_col.b*mix + conv.b*(1.0-mix);
+    //vec4 noise_col = vec4(conv.r*mix,conv.g*mix,conv.b*mix,1.0);
+
+    end_col = noise_prc * vec4(conv.rgb,1.0) + (1.0-noise_prc) * alt_col;
   }
   //background
   else{
@@ -181,8 +190,12 @@ void main(){
     noise_prc =  0.3 + 0.7 * simplex3d( vec3(uv.x*noise_zoom, uv.y*noise_zoom, game_time*noise_speed));
 
     //vec4 noise_col = vec4(250.0/255.0, 243.0/255.0, 235.0/255.0,1.0);
-    vec4 noise_col = vec4(1.0,1.0,1.0,1.0);
-    end_col = noise_prc * vec4(conv.rgb,1.0) + (1.0-noise_prc) * noise_col;
+    float noise_grey = 1.0;
+    //vec4 noise_col = vec4(noise_grey,noise_grey,noise_grey,1.0);
+    
+    vec4 alt_col = vec4(61.0/255.0, 48.0/255.0, 31.0/255.0, 1.0);
+
+    end_col = noise_prc * vec4(conv.rgb,1.0) + (1.0-noise_prc) * alt_col;
   }
   
   

@@ -13,9 +13,10 @@ let show_cursor = false;
 //spacing
 const tile_size = 20;
 
-const trail_length = 3000;
+let trail_length = 1000;//3000;
 
 let advance_time = true;
+let static_mode = false;
 
 let num_cols = 28;
 let num_rows = 31;
@@ -51,54 +52,69 @@ let next_behavior_change_time = 7
 let cursor_tile = null
 let mouse_control = true;
 
+//random
+var rand;
+
 //shader stuff
 //https://github.com/aferriss/p5jsShaderExamples
 let effect_shader;
 let fbo;	//trying drawing into this
 let use_shader = true;
 
+//saving
+let need_to_save = false;
+let save_name = "unkown";
+const page_w = 2412;
+const page_h = 3074;
+
 function preload(){
 	effect_shader = loadShader('effect.vert', 'effect.frag');
 }
 
 function set_static_mode(){
+	static_mode = true;
+
 	advance_time = false
-	for (let i=0; i<950; i++){
-		update(1)
-	}
 	show_actors = false
 	show_grid = true
 	show_connections = true
 	show_trails = true
 	show_cursor = false
 	mouse_control = false
+
+	trail_length = 2000;
+
+	need_to_save = true;
+	//pixelDensity(1.0);	//otherwise FBO gets weird with retina displays
 }
 
 function setup() {
-	createCanvas(window.innerWidth, window.innerHeight, WEBGL);
+	//give us a random seed. Will be replaced with a defined seed if one is provided
+	rand = new Math.seedrandom();	
+
+	//createCanvas(page_w, page_h, WEBGL);
 
 	p5.disableFriendlyErrors = true;	//this can help performance a bit
 
-	fbo = createGraphics(window.innerWidth, window.innerHeight, WEBGL);
+	
 
-	// pg.background(255,255,255,0);
-	// pg.clear()
-	// pg.fill(255);
-	// pg.rect(0,0,pg.width,pg.height);
-	// pg.fill(0,0,255);
-	// for (let i=0; i<100; i++){
-	// pg.ellipse(random(0,pg.width),random(0,pg.height), random(10,100), random(10,100))
-	// }
+	check_url()
 
-	// pg.fill(255);
-	// pg.ellipse(0, 0, 100, 100)
-	// pg.fill(128);
-	// pg.ellipse(pg.width/2, pg.height/2, 100, 100)
-	// pg.fill(0);
-	// pg.ellipse(pg.width, pg.height, 100, 100)
+	if (!static_mode){
+		createCanvas(window.innerWidth, window.innerHeight, WEBGL);
+	}else{
+		createCanvas(page_w/2, page_h/2, WEBGL);
+	}
 
+	console.log("ma size "+width+" , "+height)
+
+	//createCanvas(page_w, page_h);
 
 	set_initial_zoom();
+
+	//get a start time. Game ends around 1800s
+	let start_time = 100 + rand() * 1500;
+	console.log("start time: "+start_time)
 
 	raw_map_old = make_raw_level()
 	raw_map = test_level_json()
@@ -187,37 +203,93 @@ function setup() {
 
 	cursor_tile = grid[0][0][0]
 
-	check_url()
+	
 
-	if (advance_time){
-		for (let i=0; i<50; i++){
-			update(1)
+	if (advance_time || true){
+		while(start_time > 0){
+			if (start_time > 1){
+				update(1);
+				start_time--;
+			}
+			else{
+				update(start_time);
+				start_time = 0;
+			}
 		}
+		// for (let i=0; i<50; i++){
+		// 	update(1)
+		// }
 	}
 
 	
 }
 
 function set_initial_zoom(){
-	let w_zoom = width / preferred_width
-	let h_zoom = height / preferred_height
+	//create the fbo
+	//in static mode, it is a set size
+	// if (static_mode){
+	// 	fbo = createGraphics(page_w, page_h, WEBGL);
+	// }
+	// //otherwise match the page
+	// else{
+	// 	fbo = createGraphics(window.innerWidth, window.innerHeight, WEBGL);
+	// }
+
+	fbo = createGraphics(width, height, WEBGL);
+
+	//set the zoom
+	let w_zoom = fbo.width / preferred_width
+	let h_zoom = fbo.height / preferred_height
 	view_zoom = Math.min(w_zoom, h_zoom)
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
-  set_initial_zoom();
+	if (!static_mode){
+  		resizeCanvas(windowWidth, windowHeight);
+  		set_initial_zoom();
+	}
 }
 
 function check_url(){
 	let url = getURL();
 	let argments_text = url.substring(url.indexOf("?") + 1);
-	console.log(argments_text)
+	console.log("url argument:"+argments_text)
+	let args = argments_text.split(",");
 
-	//is this in static frame mode?
-	if (argments_text == "frame"){
-		set_static_mode();
+	let reset_seed = false;
+	let seed_val = 0;
+
+	args.forEach(arg=>{
+		console.log(arg)
+		let parts = arg.split("=");
+		console.log(parts)
+		if (parts.length == 2){
+
+			//seed
+			if (parts[0] == "seed"){
+				rand = new Math.seedrandom(parts[1]); 
+				seed_val += parts[1]
+				reset_seed = true
+				save_name = parts[1];
+			}
+
+			//page number
+			if (parts[0] == "page"){
+				console.log("luv page "+parts[1]);
+				seed_val += parts[1]
+				reset_seed = true
+				save_name += "_"+parts[1];
+				set_static_mode();
+			}
+		}
+	})
+
+	if (reset_seed){
+		console.log("seed:"+seed_val)
+		rand = new Math.seedrandom(seed_val); 
 	}
+
+	
 }
 
 function set_behavior(new_setting){
@@ -230,7 +302,7 @@ function set_behavior(new_setting){
 		}
 	})
 
-	console.log("behavior is now: "+behavior_mode)
+	//console.log("behavior is now: "+behavior_mode)
 }
 
 function update(turn_step){
@@ -261,16 +333,18 @@ function update(turn_step){
 }
 
 function draw() {
-	//fbo.background(251, 250, 255)
-	fbo.clear(251, 250, 255)
+	fbo.background(99, 77, 49)
+	fbo.clear(99, 77, 49);
 
-	fbo.fill(255, 244, 230);//252, 242, 220);//255, 251, 237);//255, 254, 250);//251, 247, 255);//251, 250, 255)
 
-	//fbo.fill(50)
-	fbo.push()
-	fbo.translate(0,0,-200)
-	fbo.rect(-fbo.width, -fbo.height, fbo.width*2, fbo.height*2)
-	fbo.pop()
+	if (use_shader || true){
+		//fbo.fill(255, 244, 230);
+		fbo.fill(99, 77, 49);
+		fbo.push()
+		fbo.translate(0,0,-400)
+		fbo.rect(-fbo.width, -fbo.height, fbo.width*2, fbo.height*2)
+		fbo.pop()
+	}
 
 	if (advance_time){
 		let turn_step = 1;
@@ -310,20 +384,25 @@ function draw() {
 
 					let tile = grid[c][r][d]
 					if (tile.open){
-						let size = tile_size*0.1
+						// let size = tile_size*0.1
+						// if (tile.has_pellet){
+						// 	fbo.fill(0)
+						// 	size= tile_size*0.20
+						// }else{
+						// 	fbo.fill(134, 41, 140)
+						// }
+
 						if (tile.has_pellet){
 							fbo.fill(0)
-							size= tile_size*0.20
-						}else{
-							fbo.fill(134, 41, 140)
+							let size= tile_size*0.30
+							if (show_connections)	size *= 0.4
+							size *= 0.5
+							fbo.noStroke()
+							fbo.push()
+							fbo.translate(tile.x, tile.y, tile.z)
+							fbo.sphere(size)
+							fbo.pop()
 						}
-						if (show_connections)	size *= 0.4
-						size *= 0.5
-						fbo.noStroke()
-						fbo.push()
-						fbo.translate(tile.x, tile.y, tile.z)
-						fbo.sphere(size)
-						fbo.pop()
 
 						if (show_connections){
 							for (let dir = 0; dir<NUM_DIRS; dir++){
@@ -366,10 +445,6 @@ function draw() {
 
 	fbo.pop();
 
-	//test initial zoom
-	// noFill();
-	// stroke(255,0,0);
-	// rect(-preferred_width/2,-preferred_height/2, preferred_width,preferred_height);
 
 	//fill(0)
 	//text("FPS: "+frameRate(), 10,15)
@@ -379,27 +454,32 @@ function draw() {
 		// // lets just send the cam to our shader as a uniform
 		effect_shader.setUniform('tex0', fbo);
 		// // we will also need the resolution of our sketch as a vec2
-		effect_shader.setUniform('resolution', [width, height]);
+		effect_shader.setUniform('resolution', [fbo.width, fbo.height]);
 
 		effect_shader.setUniform('offset_range', map(mouseX,100,width, 0,40, true));
 
-		effect_shader.setUniform('stepSize', [1.0/width, 1.0/height]);
+		effect_shader.setUniform('stepSize', [1.0/fbo.width, 1.0/fbo.height]);
 
 		effect_shader.setUniform('game_time', game_time);
 
 		// how far away to sample from the current pixel
 		// 1 is 1 pixel away
-		let dist = 1;//map(mouseX,20,width,0,10, true)	//0.5 looks cool
+		let dist = 0.25;//map(mouseX,20,width,0,10, true)	//0.5 looks cool
 		effect_shader.setUniform('dist', dist);
-		console.log("dist "+dist)
+		//console.log("dist "+dist)
 
 		fill(255)
-		rect(0,0,width,height)
+		rect(0,0,fbo.width,fbo.height)
 	
 	}
 	else{
 		tint(255)
 		image(fbo, -width/2,-height/2)
+	}
+
+	if (need_to_save){
+		save(save_name+".png");
+		need_to_save = false;
 	}
 }
 
@@ -480,9 +560,10 @@ function keyPressed(){
 function mouseWheel(event) {
 	if (mouse_control){
 		//move the square according to the vertical scroll amount
-		view_zoom += event.delta * 0.01;
+		view_zoom += event.delta * 0.001;
 	  
-		if (view_zoom < 0.1)	view_zoom = 0.1
+		if (view_zoom < 0.7)	view_zoom = 0.7;
+		if (view_zoom > 2)		view_zoom = 2;
 	  	console.log(view_zoom)
 	}
   //uncomment to block page scrolling

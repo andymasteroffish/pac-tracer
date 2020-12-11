@@ -18,6 +18,9 @@ function make_actor({type, c,r,d, col, target_actor, scatter_tile}){
 		trail_pnts : []
 	}
 
+	//tetsing
+	//actor.col *= 1.0;	
+
 	//setting the movement speeds
 	actor.speed_mod = 1;
 	if (actor.type == "pacman"){
