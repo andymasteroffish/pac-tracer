@@ -459,24 +459,9 @@ function draw() {
 	if (use_shader){
 		console.log("luv 2 shade")
 		shader(effect_shader);
-		// // lets just send the cam to our shader as a uniform
 		effect_shader.setUniform('tex0', fbo);
-		// // we will also need the resolution of our sketch as a vec2
-		effect_shader.setUniform('resolution', [fbo.width, fbo.height]);
-
-		effect_shader.setUniform('offset_range', map(mouseX,100,width, 0,40, true));
-
-		effect_shader.setUniform('stepSize', [1.0/fbo.width, 1.0/fbo.height]);
-
 		effect_shader.setUniform('game_time', game_time*0.1);
-
 		effect_shader.setUniform('alt_col256', alt_bg_col);
-
-		// how far away to sample from the current pixel
-		// 1 is 1 pixel away
-		let dist = 0.25;//map(mouseX,20,width,0,10, true)	//0.5 looks cool
-		effect_shader.setUniform('dist', dist);
-		//console.log("dist "+dist)
 
 		fill(255)
 		rect(0,0,fbo.width,fbo.height)
