@@ -333,6 +333,8 @@ function update(turn_step){
 }
 
 function draw() {
+
+
 	let bg_col = [40, 3, 43];
 	let alt_bg_col = [6, 24, 59];//[54, 4, 59];
 
