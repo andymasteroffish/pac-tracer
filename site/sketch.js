@@ -333,13 +333,19 @@ function update(turn_step){
 }
 
 function draw() {
-	fbo.background(99, 77, 49)
-	fbo.clear(99, 77, 49);
+	let bg_col = [40, 3, 43];
+	let alt_bg_col = [6, 24, 59];//[54, 4, 59];
 
 
-	if (use_shader || true){
-		//fbo.fill(255, 244, 230);
-		fbo.fill(99, 77, 49);
+	background(bg_col[0],bg_col[1],bg_col[2])
+
+	fbo.clear(0)
+	//fbo.background(99, 77, 49)
+	//fbo.clear(99, 77, 49);
+
+
+	if (use_shader){
+		fbo.fill(bg_col[0],bg_col[1],bg_col[2]);
 		fbo.push()
 		fbo.translate(0,0,-400)
 		fbo.rect(-fbo.width, -fbo.height, fbo.width*2, fbo.height*2)
@@ -393,10 +399,9 @@ function draw() {
 						// }
 
 						if (tile.has_pellet){
-							fbo.fill(0)
-							let size= tile_size*0.30
+							fbo.fill(200)
+							let size= tile_size*0.20
 							if (show_connections)	size *= 0.4
-							size *= 0.5
 							fbo.noStroke()
 							fbo.push()
 							fbo.translate(tile.x, tile.y, tile.z)
@@ -450,6 +455,7 @@ function draw() {
 	//text("FPS: "+frameRate(), 10,15)
 
 	if (use_shader){
+		console.log("luv 2 shade")
 		shader(effect_shader);
 		// // lets just send the cam to our shader as a uniform
 		effect_shader.setUniform('tex0', fbo);
@@ -460,7 +466,9 @@ function draw() {
 
 		effect_shader.setUniform('stepSize', [1.0/fbo.width, 1.0/fbo.height]);
 
-		effect_shader.setUniform('game_time', game_time);
+		effect_shader.setUniform('game_time', game_time*0.1);
+
+		effect_shader.setUniform('alt_col256', alt_bg_col);
 
 		// how far away to sample from the current pixel
 		// 1 is 1 pixel away
