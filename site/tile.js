@@ -7,24 +7,11 @@ const DIR_OUT = 5
 const NUM_DIRS = 6
 
 function make_tile(c,r,d){
-	//console.log(raw_map)
-	//console.log("check "+d+" , "+r+" , "+c)
-	//console.log(raw_map[d][r][c])
-
+	
 	let is_open;
 	
-	//let is_open =  raw_map_old[d][r][c] == 1 //raw map has R and C reversed
-
 	is_open = raw_map[c][r][d]
-	// if (r < 20){
-	// 	is_open = raw_map[c][r][d]
-	// }
-	// else{
-	// 	//console.log("grab from old")
-	// 	is_open = raw_map_old[d][r][c] == 1
-	// }
-	
-	//if(r>=15)	is_open = false // KILL ME
+
 	let tile = {
 		open: is_open,	 
 		c: c,

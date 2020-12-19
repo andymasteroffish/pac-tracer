@@ -22,7 +22,7 @@ let num_cols = 28;
 let num_rows = 31;
 let num_depth = 9;
 
-let raw_map, raw_map_old;
+let raw_map;
 let grid = []
 
 //view
@@ -40,14 +40,17 @@ let pacman;
 let actors = []
 
 //state
-let behavior_mode = "scatter"
-let game_over = false
+let behavior_mode;
+let game_over;
+
+let game_over_reset_timer;
+const game_over_time_before_reset = 3;
 
 //timing
 let total_prc_time = 0;	
 let game_time = 0;		//estimated in seconds
 
-let next_behavior_change_time = 7
+let next_behavior_change_time;
 
 let cursor_tile = null
 let mouse_control = true;
@@ -116,11 +119,36 @@ function setup() {
 	let start_time = 100 + rand() * 1500;
 	console.log("start time: "+start_time)
 
-	raw_map_old = make_raw_level()
+	//raw_map_old = make_raw_level()
 	raw_map = test_level_json()
 
-	//console.log("raw:")
-	//console.log(raw_map)
+	reset_game()
+
+	cursor_tile = grid[0][0][0]
+
+	
+
+	if (advance_time || true){
+		while(start_time > 0){
+			if (start_time > 1){
+				update(1);
+				start_time--;
+			}
+			else{
+				update(start_time);
+				start_time = 0;
+			}
+		}
+	}
+}
+
+function reset_game(){
+	game_over = false;
+	total_prc_time = 0;
+	game_over_reset_timer = 0;
+
+	behavior_mode = "scatter"
+	next_behavior_change_time = 7
 
 	//set tiles
 	grid = new Array(num_cols);
@@ -140,6 +168,8 @@ function setup() {
 		}
 	}
 
+	actors = []
+
 	//set actors
 	pacman = make_actor({
 		type:"pacman",
@@ -148,7 +178,6 @@ function setup() {
 		d:4,
 		col : color(219, 213, 26)
 	})
-	
 
 	//ghosts
 	actors.push(
@@ -200,28 +229,6 @@ function setup() {
 	)
 
 	actors.push(pacman)
-
-	cursor_tile = grid[0][0][0]
-
-	
-
-	if (advance_time || true){
-		while(start_time > 0){
-			if (start_time > 1){
-				update(1);
-				start_time--;
-			}
-			else{
-				update(start_time);
-				start_time = 0;
-			}
-		}
-		// for (let i=0; i<50; i++){
-		// 	update(1)
-		// }
-	}
-
-	
 }
 
 function set_initial_zoom(){
@@ -330,6 +337,16 @@ function update(turn_step){
 		}
 	}
 
+	else{
+
+		game_over_reset_timer += 1.0/frameRate();
+		console.log("da time "+game_over_reset_timer);
+		if (game_over_reset_timer > game_over_time_before_reset){
+			console.log("START ME UP")
+			reset_game();
+		}
+	}
+
 }
 
 function draw() {
@@ -338,14 +355,24 @@ function draw() {
 	let bg_col = [40, 3, 43];
 	let alt_bg_col = [6, 24, 59];//[54, 4, 59];
 
+	if (advance_time){
+		let turn_step = 1;
+		
+		update(turn_step)
+
+		if (keyIsPressed && key == 'f'){
+			for (let i=0; i<10; i++){
+				update(turn_step)
+			}
+		}
+	}
+
 
 	background(bg_col[0],bg_col[1],bg_col[2])
 
-	fbo.clear(0)
-	//fbo.background(99, 77, 49)
-	//fbo.clear(99, 77, 49);
+	fbo.clear()
 
-
+	//background square for shaders
 	if (use_shader){
 		fbo.fill(bg_col[0],bg_col[1],bg_col[2]);
 		fbo.push()
@@ -354,13 +381,7 @@ function draw() {
 		fbo.pop()
 	}
 
-	if (advance_time){
-		let turn_step = 1;
-		if (keyIsPressed && key == 'f'){
-			turn_step = 2;
-		}
-		update(turn_step)
-	}
+	
 
 	//draw this thing
 
@@ -386,19 +407,42 @@ function draw() {
 
 	//draw the map
 	if (show_grid){
+		//draw the connecting lines
+		if (show_connections){
+			fbo.stroke(200);
+			fbo.beginShape(LINES)
+			for (let c=0; c<num_cols; c++){
+				for (let r=0; r<num_rows; r++){
+					for (let d=0; d<num_depth; d++){
+
+						let tile = grid[c][r][d]
+						if (tile.open){
+							for (let dir = 0; dir<NUM_DIRS; dir++){
+								if (dir == DIR_UP || dir == DIR_RIGHT || dir == DIR_IN){
+									let next = get_tile_in_dir(tile,dir)
+									if (next != null){
+										if (next.open){
+											//fbo.line(tile.x,tile.y,tile.z, next.x, next.y, next.z)
+											fbo.vertex(tile.x,tile.y,tile.z)
+											fbo.vertex(next.x, next.y, next.z)
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			fbo.endShape()
+		}
+
+		//draw pellets
 		for (let c=0; c<num_cols; c++){
 			for (let r=0; r<num_rows; r++){
 				for (let d=0; d<num_depth; d++){
 
 					let tile = grid[c][r][d]
 					if (tile.open){
-						// let size = tile_size*0.1
-						// if (tile.has_pellet){
-						// 	fbo.fill(0)
-						// 	size= tile_size*0.20
-						// }else{
-						// 	fbo.fill(134, 41, 140)
-						// }
 
 						if (tile.has_pellet){
 							fbo.fill(200)
@@ -410,25 +454,8 @@ function draw() {
 							fbo.sphere(size)
 							fbo.pop()
 						}
-
-						if (show_connections){
-							for (let dir = 0; dir<NUM_DIRS; dir++){
-								if (dir == DIR_UP || dir == DIR_RIGHT || dir == DIR_IN){
-									let next = get_tile_in_dir(tile,dir)
-									if (next != null){
-										if (next.open){
-											//fbo.stroke(255);
-											fbo.stroke(200);
-											fbo.line(tile.x,tile.y,tile.z, next.x, next.y, next.z)
-										}
-									}
-								}
-							}
-						}
 					}
-					
 				}
-
 			}
 		}
 	}
@@ -455,9 +482,9 @@ function draw() {
 
 	//fill(0)
 	//text("FPS: "+frameRate(), 10,15)
+	//console.log("FPS: "+frameRate())
 
 	if (use_shader){
-		console.log("luv 2 shade")
 		shader(effect_shader);
 		effect_shader.setUniform('tex0', fbo);
 		effect_shader.setUniform('game_time', game_time*0.1);
@@ -505,6 +532,7 @@ function keyPressed(){
 	// }
 
 	//moving the cursor
+	/*
 	if (key == 'w'){
 		let new_tile = get_tile_in_dir(cursor_tile, DIR_UP);
 		if (new_tile != null)	cursor_tile = new_tile
@@ -550,6 +578,7 @@ function keyPressed(){
 			set_behavior("scatter");
 		}
 	}
+	*/
 }
 
 function mouseWheel(event) {

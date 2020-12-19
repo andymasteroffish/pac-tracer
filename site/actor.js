@@ -83,6 +83,7 @@ function draw_trail(actor){
 	fbo.strokeWeight(1)
 	fbo.stroke(actor.col)
 
+	fbo.beginShape(LINES);
 
 	
 	let start_pnt = Math.max(0, actor.trail_pnts.length-trail_length)
@@ -98,8 +99,10 @@ function draw_trail(actor){
 
 		//on curves, just connect 'em
 		if (matching_dirs <= 1){
-			//strokeWeight(1)
-			fbo.line(a.x,a.y,a.z, b.x,b.y,b.z)
+			//fbo.line(a.x,a.y,a.z, b.x,b.y,b.z)
+			fbo.vertex(a.x,a.y,a.z);
+			fbo.vertex(b.x,b.y,b.z);
+
 		}
 		//on straight passages, do something else
 		else{
@@ -126,10 +129,14 @@ function draw_trail(actor){
 				new_pos.z += Math.sin(angle) * dist
 			}
 
-			fbo.line(new_pos.x,new_pos.y,new_pos.z, b.x,b.y,b.z)
+			//fbo.line(new_pos.x,new_pos.y,new_pos.z, b.x,b.y,b.z)
+			fbo.vertex(new_pos.x,new_pos.y,new_pos.z);
+			fbo.vertex(b.x,b.y,b.z);
 
 		}
 	}
+
+	fbo.endShape();
 }
 
 function update_actor(actor, turn_prc_step){
