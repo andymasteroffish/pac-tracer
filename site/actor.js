@@ -14,19 +14,16 @@ function make_actor({type, c,r,d, col, target_actor, scatter_tile}){
 		target_tile : grid[c][r][d],
 		scatter_tile : scatter_tile,
 		col: col,
-		//trail_tiles : [],
 		trail_pnts : []
 	}
 
-	//tetsing
-	//actor.col *= 1.0;	
 
 	//setting the movement speeds
 	actor.speed_mod = 1;
 	if (actor.type == "pacman"){
 		actor.speed_mod = 0.8;
 	}else{
-		actor.speed_mod = 0.75;	//should be 0.75
+		actor.speed_mod = 0.75;	
 	}
 
 	//offset
@@ -73,7 +70,6 @@ function draw_actor(actor){
 	}
 
 	//trail
-	//console.log(actor.col)
 	if (show_trails){
 		draw_trail(actor)
 	}
@@ -99,7 +95,6 @@ function draw_trail(actor){
 
 		//on curves, just connect 'em
 		if (matching_dirs <= 1){
-			//fbo.line(a.x,a.y,a.z, b.x,b.y,b.z)
 			fbo.vertex(a.x,a.y,a.z);
 			fbo.vertex(b.x,b.y,b.z);
 
@@ -129,7 +124,6 @@ function draw_trail(actor){
 				new_pos.z += Math.sin(angle) * dist
 			}
 
-			//fbo.line(new_pos.x,new_pos.y,new_pos.z, b.x,b.y,b.z)
 			fbo.vertex(new_pos.x,new_pos.y,new_pos.z);
 			fbo.vertex(b.x,b.y,b.z);
 
@@ -203,9 +197,6 @@ function end_actor_turn(actor){
 	//prev tile becomes next tile
 	actor.cur_tile = actor.next_tile;
 
-	//store it
-	//actor.trail_tiles.push(actor.cur_tile)
-
 	//pacman eats
 	if (actor.type == "pacman"){
 		actor.cur_tile.has_pellet = false
@@ -250,9 +241,6 @@ function make_turn_end_decision(actor){
 		}
 	}
 
-	//console.log("possible: ")
-	
-
 	if (possible_dirs.length == 0){
 		console.log("NO VALID DIRECTIONS! BAD!")
 	}
@@ -263,16 +251,12 @@ function make_turn_end_decision(actor){
 	possible_dirs.forEach( dir => {
 		let other_tile = get_tile_in_dir(actor.cur_tile, dir)
 		let distance = dist(other_tile.c, other_tile.r, other_tile.d, target_tile.c, target_tile.r, target_tile.d)
-		//console.log("  "+dir+" has dist "+distance)
 		if (distance < shortest_dist){
 			shortest_dist = distance;
 			best_dir = dir
-			//console.log("     that best")
 		}
 	})
 
-	//var item = items[Math.floor(Math.random() * items.length)];
-	//let new_dir = possible_dirs[Math.floor(Math.random() * possible_dirs.length)];
 	actor.dir = best_dir
 	actor.next_tile = get_tile_in_dir(actor.cur_tile, actor.dir)
 }
@@ -312,8 +296,6 @@ function get_target_tile(actor){
 		leading_tile.r += push_dir.y*2
 		leading_tile.d += push_dir.z*2
 
-		//console.log("leading tile "+leading_tile.c+" , "+leading_tile.r)
-
 		//get delta from blink to that tile
 		let delta_tile = {
 			c: leading_tile.c - actor.blinky.cur_tile.c,
@@ -321,16 +303,12 @@ function get_target_tile(actor){
 			d: leading_tile.d - actor.blinky.cur_tile.d
 		}
 
-		//console.log("delta tile "+delta_tile.c+" , "+delta_tile.r)
-
 		//add that delta to the leading pos
 		let final_tile = {
 			c: leading_tile.c + delta_tile.c,
 			r: leading_tile.r + delta_tile.r,
 			d: leading_tile.d + delta_tile.d
 		}
-
-		//console.log("final tile "+final_tile.c+" , "+final_tile.r)
 
 		return final_tile
 	}

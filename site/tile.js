@@ -45,7 +45,6 @@ function dir_vec(dir){
 	if (dir == DIR_LEFT)		return {x:-1, y:0,  z:0}
 	if (dir == DIR_IN)			return {x:0, y:0,   z:1}
 	if (dir == DIR_OUT)			return {x:0, y:0,   z:-1}
-	console.log("you messed up")
 }
 
 function opposite_dir(dir){
@@ -204,7 +203,6 @@ function get_raw_levelParts(){
 		]
 	]
 
-	//console.log(raw)
 	return raw
 }
 

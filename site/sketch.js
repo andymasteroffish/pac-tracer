@@ -1,4 +1,17 @@
-//https://www.gamasutra.com/view/feature/3938/the_pacman_dossier.php?print=1
+/***************
+
+Pac Tracer by Andy Wallace
+December 2020
+
+Created for MIT Generative Unfoldings Symposium
+
+This project examines the elegance and liveliness of the original Pac-Man AI, developed in 1980, by following the paths of Pac-Man and the four ghosts through an extruded 3D maze. Pac-Man’s AI represents some of the earliest and still most compelling work in games AI, with simple rules evoking the sense that each ghost has its own personality and own predispositions for mischief. 
+The rules that define the ghost movement are not truly adversarial: rather, they are about spatial desires. Each ghost has a place they want to be relative to Pac-Man and their fellow ghosts. This project allows those desires to play out unfettered by concerns about gamestate, or for that matter, any human interloper. By tracing those paths through the maze, the idiosyncrasies and personalities emerging from those rules become clear. What was a hunt now looks more like a waltz of attraction.
+
+The rules for the behavior in Pac-Man are beautifuly documented in The Pac-Man Dossier by Jamey Pittman
+https://www.gamasutra.com/view/feature/3938/the_pacman_dossier.php?print=1
+
+****************/
 
 
 //visual modes
@@ -13,7 +26,7 @@ let show_cursor = false;
 //spacing
 const tile_size = 20;
 
-let trail_length = 1000;//3000;
+let trail_length = 1000;
 
 let advance_time = true;
 let static_mode = false;
@@ -59,9 +72,9 @@ let mouse_control = true;
 var rand;
 
 //shader stuff
-//https://github.com/aferriss/p5jsShaderExamples
+//huge thanks to https://github.com/aferriss/p5jsShaderExamples
 let effect_shader;
-let fbo;	//trying drawing into this
+let fbo;	//drawing into this
 let use_shader = true;
 
 //saving
@@ -88,18 +101,13 @@ function set_static_mode(){
 	trail_length = 2000;
 
 	need_to_save = true;
-	//pixelDensity(1.0);	//otherwise FBO gets weird with retina displays
 }
 
 function setup() {
 	//give us a random seed. Will be replaced with a defined seed if one is provided
 	rand = new Math.seedrandom();	
 
-	//createCanvas(page_w, page_h, WEBGL);
-
 	p5.disableFriendlyErrors = true;	//this can help performance a bit
-
-	
 
 	check_url()
 
@@ -111,33 +119,26 @@ function setup() {
 
 	console.log("ma size "+width+" , "+height)
 
-	//createCanvas(page_w, page_h);
-
 	set_initial_zoom();
 
 	//get a start time. Game ends around 1800s
 	let start_time = 100 + rand() * 1500;
 	console.log("start time: "+start_time)
 
-	//raw_map_old = make_raw_level()
 	raw_map = test_level_json()
 
 	reset_game()
 
 	cursor_tile = grid[0][0][0]
 
-	
-
-	if (advance_time || true){
-		while(start_time > 0){
-			if (start_time > 1){
-				update(1);
-				start_time--;
-			}
-			else{
-				update(start_time);
-				start_time = 0;
-			}
+	while(start_time > 0){
+		if (start_time > 1){
+			update(1);
+			start_time--;
+		}
+		else{
+			update(start_time);
+			start_time = 0;
 		}
 	}
 }
@@ -173,8 +174,8 @@ function reset_game(){
 	//set actors
 	pacman = make_actor({
 		type:"pacman",
-		c:14,//6,
-		r:11,// 14,
+		c:14,
+		r:11,
 		d:4,
 		col : color(219, 213, 26)
 	})
@@ -254,16 +255,13 @@ function windowResized() {
 function check_url(){
 	let url = getURL();
 	let argments_text = url.substring(url.indexOf("?") + 1);
-	console.log("url argument:"+argments_text)
 	let args = argments_text.split(",");
 
 	let reset_seed = false;
 	let seed_val = 0;
 
 	args.forEach(arg=>{
-		console.log(arg)
 		let parts = arg.split("=");
-		console.log(parts)
 		if (parts.length == 2){
 
 			//seed
@@ -276,7 +274,6 @@ function check_url(){
 
 			//page number
 			if (parts[0] == "page"){
-				console.log("luv page "+parts[1]);
 				seed_val += parts[1]
 				reset_seed = true
 				save_name += "_"+parts[1];
@@ -302,8 +299,6 @@ function set_behavior(new_setting){
 			flip_direction(actor)
 		}
 	})
-
-	//console.log("behavior is now: "+behavior_mode)
 }
 
 function update(turn_step){
@@ -318,7 +313,6 @@ function update(turn_step){
 		total_prc_time += turn_step
 		game_time = total_prc_time / (10/pacman.speed_mod)	//it takes pacman about a second to go 10 tiles
 	
-		//console.log("time to mode swith "+(next_behavior_change_time-game_time) )
 		//time to swicth behaviors?
 		if (game_time > next_behavior_change_time){
 			if (behavior_mode == "chase"){
@@ -347,7 +341,7 @@ function draw() {
 
 
 	let bg_col = [40, 3, 43];
-	let alt_bg_col = [6, 24, 59];//[54, 4, 59];
+	let alt_bg_col = [6, 24, 59];
 
 	if (advance_time){
 		let turn_step = 1;
@@ -378,7 +372,6 @@ function draw() {
 	
 
 	//draw this thing
-
 	fbo.push();
 
 	//slowly rotate the camera
@@ -474,10 +467,6 @@ function draw() {
 	fbo.pop();
 
 
-	//fill(0)
-	//text("FPS: "+frameRate(), 10,15)
-	//console.log("FPS: "+frameRate())
-
 	if (use_shader){
 		shader(effect_shader);
 		effect_shader.setUniform('tex0', fbo);
@@ -503,9 +492,7 @@ function mousePressed(){
 }
 
 function keyPressed(){
-	if (key == 'Enter'){
-		new_turn();
-	}
+	
 
 	if (key=='0'){
 		advance_time = !advance_time
@@ -521,9 +508,6 @@ function keyPressed(){
 	if (key == '3'){
 		show_actors = !show_actors
 	}
-	// if (key == '4'){
-	// 	show_connections = !show_connections
-	// }
 
 	//moving the cursor
 	/*
@@ -582,19 +566,7 @@ function mouseWheel(event) {
 	  
 		if (view_zoom < 0.7)	view_zoom = 0.7;
 		if (view_zoom > 2)		view_zoom = 2;
-	  	console.log(view_zoom)
 	}
   //uncomment to block page scrolling
   return false;
 }
-
-//KILL ME
-// function new_turn(){
-// 	turn_num++;
-// 	turn_prc = 0;
-
-// 	//have all actors make a decision
-// 	actors.forEach(actor => {
-// 		end_actor_turn(actor);
-// 	})
-// }

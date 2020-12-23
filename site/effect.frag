@@ -1,3 +1,5 @@
+//this file is originally based on one from https://github.com/aferriss/p5jsShaderExamples
+
 precision mediump float;
 
 // our texcoords from the vertex shader
@@ -10,13 +12,6 @@ uniform float game_time;
 
 uniform vec3 alt_col256;
 
-
-//https://thebookofshaders.com/10/
-float random (vec2 st) {
-    return fract(sin(dot(st.xy,
-        vec2(12.9898,78.233)))*
-        43758.5453123);
-}
 
 /* 3d simplex noise */
 //https://www.shadertoy.com/view/XsX3zB
@@ -92,7 +87,6 @@ void main(){
   vec4 color = texture2D(tex0, uv);
 
     
-  //gl_FragColor = vec4(conv.rgb, 1.0);
   float noise_zoom = 20.0;
   float noise_speed = 15.0;
   float noise_prc = 1.0;
@@ -109,17 +103,11 @@ void main(){
     noise_speed *= 0.1;
     noise_prc =  0.3 + 0.7 * simplex3d( vec3(uv.x*noise_zoom, uv.y*noise_zoom, game_time*noise_speed));
 
-    //vec4 noise_col = vec4(250.0/255.0, 243.0/255.0, 235.0/255.0,1.0);
     float noise_grey = 1.0;
-    //vec4 noise_col = vec4(noise_grey,noise_grey,noise_grey,1.0);
-    
-    //vec4 alt_col = vec4(0.0, 0.0, 0.0, 1.0);//vec4(61.0/255.0, 48.0/255.0, 31.0/255.0, 1.0);
 
     vec4 alt_col = vec4(alt_col256.r/255.0, alt_col256.g/255.0, alt_col256.b/255.0, 1.0);
 
     if ( floor( mod(noise_prc*255.0, 10.0) ) < 1.0 ){
-      //if ( mod(noise_prc, 10.0)  < 1.0 ){
-
       end_col = noise_prc * vec4(color.rgb,1.0) + (1.0-noise_prc) * alt_col;
     }
   }
@@ -127,7 +115,6 @@ void main(){
   
   gl_FragColor = end_col;
 
-  //gl_FragColor =conv;
 }
 
 
