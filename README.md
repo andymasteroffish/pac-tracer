@@ -1,2 +1,5 @@
 # pac-tracer
-sketch pad for Generative Unfoldings: Call for Sketches/Prototypes
+
+Created by Andy Wallace
+
+for MIT Gnerative Unfoldings
