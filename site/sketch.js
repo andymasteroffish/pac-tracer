@@ -232,22 +232,16 @@ function reset_game(){
 }
 
 function set_initial_zoom(){
-	//create the fbo
-	//in static mode, it is a set size
-	// if (static_mode){
-	// 	fbo = createGraphics(page_w, page_h, WEBGL);
-	// }
-	// //otherwise match the page
-	// else{
-	// 	fbo = createGraphics(window.innerWidth, window.innerHeight, WEBGL);
-	// }
-
 	fbo = createGraphics(width, height, WEBGL);
 
 	//set the zoom
 	let w_zoom = fbo.width / preferred_width
 	let h_zoom = fbo.height / preferred_height
 	view_zoom = Math.min(w_zoom, h_zoom)
+
+	if (static_mode){
+		view_zoom *= 0.9;	//make it just a bit smaller
+	}
 }
 
 function windowResized() {
